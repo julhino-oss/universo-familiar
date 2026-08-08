@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Universo Familiar</title>
+<meta name="theme-color" content="#171335">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Universo Familiar">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23171335'/%3E%3Ccircle cx='42' cy='40' r='26' fill='%23f4b740'/%3E%3Cellipse cx='42' cy='40' rx='38' ry='9' fill='none' stroke='%23f4b740' stroke-width='3' opacity='0.6' transform='rotate(-15 42 40)'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23171335'/%3E%3Ccircle cx='42' cy='40' r='26' fill='%23f4b740'/%3E%3Cellipse cx='42' cy='40' rx='38' ry='9' fill='none' stroke='%23f4b740' stroke-width='3' opacity='0.6' transform='rotate(-15 42 40)'/%3E%3C/svg%3E">
+<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22Universo%20Familiar%22%2C%22short_name%22%3A%22Universo%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23171335%22%2C%22theme_color%22%3A%22%23171335%22%7D">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #171335;
+    --bg-deep: #100d26;
+    --card: #241f4c;
+    --card-hi: #2e2861;
+    --gold: #f4b740;
+    --coral: #ff6f5b;
+    --text: #f5f1ff;
+    --muted: #9c93c4;
+    --line: #3a3470;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    min-height: 100%;
+    background:
+      radial-gradient(ellipse 700px 500px at 15% -5%, rgba(255,111,91,0.16) 0%, transparent 60%),
+      radial-gradient(ellipse 600px 600px at 90% 15%, rgba(196,140,255,0.18) 0%, transparent 55%),
+      radial-gradient(ellipse 800px 700px at 50% 100%, rgba(77,208,225,0.10) 0%, transparent 60%),
+      radial-gradient(circle at 20% -10%, #241f5c 0%, var(--bg-deep) 60%);
+    background-attachment: fixed;
+    color: var(--text);
+    font-family: 'Sora', system-ui, -apple-system, sans-serif;
+    position: relative;
+  }
+  .stars-layer {
+    position: fixed; inset: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .stars-layer::before, .stars-layer::after {
+    content: "";
+    position: absolute; inset: 0;
+    background-repeat: repeat;
+    background-image:
+      radial-gradient(1.4px 1.4px at 20px 30px, #fff, transparent),
+      radial-gradient(1px 1px at 90px 80px, #fff, transparent),
+      radial-gradient(1.6px 1.6px at 150px 20px, #fff, transparent),
+      radial-gradient(1px 1px at 60px 140px, #fff, transparent),
+      radial-gradient(1.2px 1.2px at 180px 120px, #fff, transparent),
+      radial-gradient(1px 1px at 120px 170px, #fff, transparent);
+    background-size: 220px 200px;
+    opacity: 0.5;
+    animation: twinkle 5s ease-in-out infinite;
+  }
+  .stars-layer::after {
+    background-size: 300px 280px;
+    background-position: 40px 60px;
+    opacity: 0.3;
+    animation: twinkle 7s ease-in-out infinite reverse;
+  }
+  @keyframes twinkle { 0%,100% { opacity: 0.25; } 50% { opacity: 0.6; } }
+  @media (prefers-reduced-motion: reduce) {
+    .stars-layer::before, .stars-layer::after { animation: none; }
+  }
+  body {
+    display: flex;
+    justify-content: center;
+    padding: 28px 16px 60px;
+  }
+  .wrap { width: 100%; max-width: 480px; position: relative; z-index: 1; }
+  h1, h2, h3 { font-family: 'Fraunces', serif; margin: 0; }
+  .eyebrow {
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    font-size: 11px;
+    color: var(--gold);
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .title { font-size: 26px; font-weight: 700; line-height: 1.15; }
+  .subtitle { color: var(--muted); font-size: 14px; margin-top: 8px; }
+
+  /* ---- Home: profile planets ---- */
+  .home-header { margin-bottom: 24px; }
+  .planet-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    margin-top: 20px;
+  }
+  .planet-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    padding: 18px 14px;
+    text-align: center;
+    cursor: pointer;
+    box-shadow: 0 6px 16px rgba(8,6,24,0.35);
+    transition: transform .15s ease, background .15s ease, box-shadow .15s ease;
+  }
+  .planet-card:hover { transform: translateY(-3px); background: var(--card-hi); box-shadow: 0 10px 22px rgba(8,6,24,0.45); }
+  .planet-avatar {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    margin: 0 auto 10px;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+    box-shadow: 0 0 0 4px rgba(255,255,255,0.05), 0 6px 14px rgba(8,6,24,0.4);
+  }
+  .planet-avatar svg { width: 100%; height: 100%; }
+  .planet-name { font-weight: 600; font-size: 15px; }
+  .planet-meta { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  .add-card {
+    border: 1.5px dashed var(--line);
+    background: transparent;
+    border-radius: 20px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    color: var(--muted);
+    cursor: pointer;
+    min-height: 116px;
+    font-size: 13px;
+    gap: 6px;
+  }
+  .add-card:hover { border-color: var(--gold); color: var(--gold); }
+  .add-plus { font-size: 26px; font-family: 'Fraunces', serif; }
+
+  /* ---- Profile view ---- */
+  .top-row {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 18px;
+  }
+  .back-btn {
+    background: none; border: none; color: var(--muted);
+    font-size: 14px; cursor: pointer; padding: 6px 0;
+  }
+  .back-btn:hover { color: var(--text); }
+  .streak-chip {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    padding: 6px 12px;
+    font-size: 13px;
+    display: flex; align-items: center; gap: 5px;
+    box-shadow: 0 3px 10px rgba(8,6,24,0.3);
+  }
+  .profile-header { text-align: center; margin-bottom: 6px; }
+  .sky-wrap {
+    background: linear-gradient(180deg, #201a4a 0%, #14112f 100%);
+    border-radius: 24px;
+    border: 1px solid var(--line);
+    padding: 8px;
+    margin: 18px 0;
+    overflow: hidden;
+  }
+  .progress-row {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 12px; color: var(--muted); margin: 10px 4px 0;
+  }
+  .progress-bar { height: 6px; background: #2a2557; border-radius: 4px; overflow: hidden; margin: 8px 0 2px; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--coral), var(--gold)); }
+
+  button.cta {
+    width: 100%;
+    padding: 15px;
+    margin-top: 18px;
+    border: none;
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--coral), #ff9060);
+    color: #1c0e08;
+    font-weight: 700;
+    font-size: 15px;
+    font-family: 'Sora', sans-serif;
+    cursor: pointer;
+  }
+  button.cta:active { transform: scale(0.98); }
+
+  /* ---- Modal / overlay ---- */
+  .overlay {
+    position: fixed; inset: 0;
+    background: rgba(10, 8, 26, 0.72);
+    backdrop-filter: blur(3px);
+    display: flex; align-items: flex-end;
+    justify-content: center;
+    z-index: 10;
+  }
+  .sheet {
+    background: #1c1846;
+    border: 1px solid var(--line);
+    border-radius: 24px 24px 0 0;
+    width: 100%; max-width: 480px;
+    max-height: 82vh;
+    overflow-y: auto;
+    padding: 22px 20px 28px;
+    box-shadow: 0 -10px 34px rgba(0,0,0,0.45);
+  }
+  .sheet-close {
+    display: block; margin: 0 0 12px auto;
+    background: var(--card); border: none; color: var(--muted);
+    width: 30px; height: 30px; border-radius: 50%; cursor: pointer;
+    font-size: 15px;
+  }
+  .cat-list { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+  .cat-item {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 14px 16px;
+    display: flex; justify-content: space-between; align-items: center;
+    cursor: pointer;
+    box-shadow: 0 3px 10px rgba(8,6,24,0.25);
+    transition: transform .15s ease, background .15s ease, box-shadow .15s ease;
+  }
+  .cat-item:hover { background: var(--card-hi); transform: translateY(-2px); box-shadow: 0 6px 16px rgba(8,6,24,0.35); }
+  .cat-item-name { font-weight: 600; font-size: 14.5px; }
+  .cat-item-count { color: var(--muted); font-size: 12px; }
+
+  .topic-item {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 13px 16px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 10px;
+    box-shadow: 0 3px 10px rgba(8,6,24,0.25);
+    transition: transform .15s ease, background .15s ease, box-shadow .15s ease;
+  }
+  .topic-item:not(.learned):hover { background: var(--card-hi); transform: translateY(-2px); box-shadow: 0 6px 16px rgba(8,6,24,0.35); }
+  .topic-item.learned { opacity: 0.5; cursor: default; box-shadow: none; }
+  .topic-star { font-size: 15px; }
+  .topic-name { font-size: 14px; font-weight: 500; }
+
+  .detail-card { text-align: left; }
+  .detail-cat { color: var(--gold); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; font-weight: 600; }
+  .detail-title { font-size: 20px; margin: 8px 0 14px; }
+  .detail-body { font-size: 14.5px; line-height: 1.6; color: #ded9f5; }
+
+  input.name-input {
+    width: 100%;
+    padding: 13px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: var(--card);
+    color: var(--text);
+    font-size: 15px;
+    font-family: 'Sora', sans-serif;
+    margin-top: 14px;
+  }
+  input.name-input:focus { outline: 2px solid var(--gold); }
+  .swatch-row { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+  .swatch {
+    width: 34px; height: 34px; border-radius: 50%;
+    cursor: pointer; border: 2px solid transparent;
+  }
+  .swatch.selected { border-color: white; }
+  .empty-note { text-align: center; color: var(--muted); font-size: 13px; padding: 30px 10px; }
+
+  /* ---- Planet animation ---- */
+  .planet-halo { animation: pulse-glow 4s ease-in-out infinite; transform-origin: 200px 130px; }
+  .planet-band { animation: band-shift 26s linear infinite; transform-origin: 200px 130px; }
+  .ring-outer { animation: band-shift 60s linear infinite reverse; transform-origin: 200px 130px; }
+  .orbit-group { animation: orbit-spin 42s linear infinite; transform-origin: 200px 130px; }
+  @keyframes pulse-glow { 0%,100% { opacity: .22; } 50% { opacity: .48; } }
+  @keyframes band-shift { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  @keyframes orbit-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) {
+    .planet-halo, .planet-band, .ring-outer, .orbit-group { animation: none; }
+  }
+</style>
+</head>
+<body>
+<div class="stars-layer"></div>
+<div class="wrap" id="app"></div>
+
+<script>
+window.addEventListener('error', function(e) {
+  var app = document.getElementById('app');
+  if (app) {
+    app.innerHTML = '<div style="background:#2e2861;border:1px solid #ff6f5b;border-radius:16px;padding:18px;margin-top:20px;font-family:sans-serif;font-size:13px;color:#f5f1ff;white-space:pre-wrap;">' +
+      '<strong style="color:#ff6f5b;">Error detectado:</strong>\n' +
+      (e.message || 'desconocido') + '\n' +
+      'Línea: ' + (e.lineno || '?') + ', Columna: ' + (e.colno || '?') +
+      '</div>';
+  }
+});
+</script>
+<script>
+const TOPICS = [
+  {id:"cn1",cat:"Ciencia y Naturaleza",title:"¿Por qué el cielo es azul?",body:"La luz del sol contiene todos los colores mezclados. Cuando entra en la atmósfera, choca con las moléculas de aire y el color azul se dispersa mucho más que los demás, así que lo vemos por todas partes del cielo."},
+  {id:"cn2",cat:"Ciencia y Naturaleza",title:"Cómo se forman las nubes",title2:"",body:"El agua de mares y ríos se evapora con el calor y sube al cielo. Ahí arriba está más frío, así que el vapor se convierte en gotitas diminutas que se juntan y forman lo que vemos como nubes."},
+  {id:"cn3",cat:"Ciencia y Naturaleza",title:"Por qué las hojas cambian de color",body:"En otoño, los árboles dejan de producir clorofila (lo que las pinta de verde). Al desaparecer ese verde, aparecen otros colores que ya estaban ahí escondidos: amarillos, naranjas y rojos."},
+  {id:"cn4",cat:"Ciencia y Naturaleza",title:"Qué es un ecosistema",body:"Es un lugar donde plantas, animales, agua y tierra viven conectados, dependiendo unos de otros. Si algo le pasa a una parte, como cortar árboles o contaminar el agua, todo el resto se ve afectado."},
+  {id:"cn5",cat:"Ciencia y Naturaleza",title:"Por qué el océano es salado",body:"La lluvia arrastra pequeñas cantidades de sal de las rocas y la tierra hasta los ríos, y los ríos la llevan al mar. Con millones de años de este proceso, la sal se acumuló hasta darle al océano su sabor salado."},
+
+  {id:"te1",cat:"Tecnología e IA",title:"Qué es la inteligencia artificial",body:"Es un tipo de programa de computadora entrenado con muchísima información para reconocer patrones y responder preguntas, como si hubiera 'aprendido' de ejemplos, aunque no piensa como una persona."},
+  {id:"te2",cat:"Tecnología e IA",title:"Qué es la nube (cloud)",body:"Es guardar tus fotos, videos o archivos en computadoras de internet en vez de solo en tu celular. Así puedes verlos desde cualquier dispositivo, y no se pierden si se te rompe el teléfono."},
+  {id:"te3",cat:"Tecnología e IA",title:"Cómo funciona un código QR",body:"Es un dibujo de cuadritos que guarda información, como un enlace o un texto. La cámara del celular lo lee y automáticamente te lleva a esa información, sin que tengas que escribir nada."},
+  {id:"te4",cat:"Tecnología e IA",title:"Qué es un robot colaborativo (cobot)",body:"Es un tipo de robot diseñado para trabajar junto a personas de forma segura, ayudando con tareas repetitivas o pesadas, sin necesitar una jaula de protección como los robots industriales antiguos."},
+  {id:"te5",cat:"Tecnología e IA",title:"Diferencia entre hardware y software",body:"El hardware es todo lo físico que puedes tocar: la pantalla, el teclado, los cables. El software son los programas y aplicaciones que corren dentro, cosas que no puedes tocar pero sí usar."},
+
+  {id:"hi1",cat:"Historia y Culturas",title:"Por qué existen los husos horarios",body:"La Tierra gira sobre sí misma, así que cuando en un lado es de día, en el otro es de noche. Para que los relojes tengan sentido en todo el mundo, se dividió el planeta en franjas con horas distintas."},
+  {id:"hi2",cat:"Historia y Culturas",title:"Qué fueron las pirámides de Egipto",body:"Eran enormes tumbas construidas hace miles de años para los faraones, los gobernantes de Egipto. Se creía que ahí guardaban todo lo necesario para su vida después de la muerte."},
+  {id:"hi3",cat:"Historia y Culturas",title:"De dónde viene tu idioma", body:"El español viene principalmente del latín, la lengua que hablaban los antiguos romanos, mezclada con palabras de los pueblos originarios de América y de otras culturas que llegaron con el tiempo."},
+  {id:"hi4",cat:"Historia y Culturas",title:"Qué es una tradición",body:"Es una costumbre que una familia o comunidad repite por generaciones, como una comida especial o una celebración, y que se transmite de padres a hijos para mantener viva su identidad."},
+  {id:"hi5",cat:"Historia y Culturas",title:"Qué es una biblioteca antigua",body:"Eran lugares donde se guardaban a mano miles de textos escritos, como la famosa Biblioteca de Alejandría. Fueron los primeros intentos de reunir todo el conocimiento del mundo en un solo sitio."},
+
+  {id:"cs1",cat:"Cuerpo y Salud",title:"Por qué dormimos",body:"Mientras duermes, tu cerebro ordena lo que aprendiste ese día y tu cuerpo se repara. Sin dormir bien, cuesta más concentrarse, recordar cosas y hasta de buen humor te cuesta estar."},
+  {id:"cs2",cat:"Cuerpo y Salud",title:"Cómo funciona el corazón",body:"Es un músculo que bombea sangre por todo tu cuerpo sin parar, llevando oxígeno a cada parte. Late en promedio unas 100,000 veces al día, incluso mientras duermes."},
+  {id:"cs3",cat:"Cuerpo y Salud",title:"Por qué necesitamos tomar agua",body:"Más de la mitad de tu cuerpo es agua. La necesitas para que tu sangre circule, tu cerebro funcione bien y tu cuerpo pueda regular su temperatura, especialmente cuando hace calor."},
+  {id:"cs4",cat:"Cuerpo y Salud",title:"Qué son los músculos",body:"Son tejidos elásticos que se contraen y estiran para mover tu cuerpo. Cuantos más los usas con ejercicio, más fuertes se vuelven, igual que un elástico que se acostumbra a estirarse."},
+  {id:"cs5",cat:"Cuerpo y Salud",title:"Por qué te da hambre",body:"Cuando tu estómago está vacío, tu cuerpo envía señales al cerebro avisando que necesita energía. Ese aviso es lo que sientes como hambre, y te empuja a buscar algo de comer."},
+
+  {id:"es1",cat:"Espacio y Universo",title:"Por qué la Luna cambia de forma",body:"La Luna no cambia de verdad, lo que cambia es cuánto sol le da desde donde la vemos. Por eso a veces se ve completa (luna llena) y otras veces solo una parte (creciente)."},
+  {id:"es2",cat:"Espacio y Universo",title:"Cuánto tarda la luz del sol en llegar a la Tierra",body:"La luz viaja muy rápido, pero el Sol está tan lejos que aun así tarda unos 8 minutos en llegar hasta nosotros. Si el Sol se apagara ahora, lo sabríamos 8 minutos después."},
+  {id:"es3",cat:"Espacio y Universo",title:"Qué es una estrella fugaz",body:"No es realmente una estrella, sino un pedacito de roca del espacio que entra a gran velocidad en la atmósfera de la Tierra y se quema, dejando una línea de luz por unos segundos."},
+  {id:"es4",cat:"Espacio y Universo",title:"Por qué flotan los astronautas",body:"No es que no haya gravedad allá arriba, sino que la estación espacial está cayendo constantemente alrededor de la Tierra a gran velocidad, y los astronautas caen junto con ella, así que sienten como si flotaran."},
+  {id:"es5",cat:"Espacio y Universo",title:"Cuántos planetas hay en el sistema solar",body:"Son ocho: Mercurio, Venus, Tierra, Marte, Júpiter, Saturno, Urano y Neptuno. Antes se contaba a Plutón como el noveno, pero en 2006 los científicos lo reclasificaron como 'planeta enano'."},
+
+  {id:"cu1",cat:"Curiosidades del Mundo",title:"Por qué los pulpos tienen tres corazones",body:"Dos corazones bombean sangre hacia sus branquias para tomar oxígeno del agua, y el tercero envía esa sangre al resto del cuerpo. Es parte de por qué son animales tan especiales."},
+  {id:"cu2",cat:"Curiosidades del Mundo",title:"Cuál es el animal más rápido",body:"En tierra, el guepardo puede correr hasta 110 km/h en distancias cortas. Pero el halcón peregrino, cuando se lanza en picada desde el cielo, supera los 300 km/h, siendo el más veloz de todos."},
+  {id:"cu3",cat:"Curiosidades del Mundo",title:"Por qué la miel nunca se echa a perder",body:"La miel tiene muy poca agua y es muy ácida, condiciones en las que las bacterias no pueden sobrevivir. Se han encontrado frascos de miel de hace miles de años que todavía se podían comer."},
+  {id:"cu4",cat:"Curiosidades del Mundo",title:"Por qué bostezamos",body:"No se sabe del todo, pero una teoría es que ayuda a enfriar el cerebro y a despertar tu atención cuando estás cansado o aburrido. Y sí, es contagioso: ver a alguien bostezar te da ganas también."},
+  {id:"cu5",cat:"Curiosidades del Mundo",title:"Por qué las cebras tienen rayas",body:"Una de las teorías más aceptadas es que las rayas confunden a los insectos que las pican y dificultan que los depredadores distingan a un solo animal dentro de la manada."},
+
+  {id:"en1",cat:"Inglés",title:"Saludos básicos",body:"'Hello' es hola, 'Good morning' es buenos días, 'Good night' es buenas noches. 'How are you?' significa '¿cómo estás?', y se responde 'I'm fine, thank you' (estoy bien, gracias)."},
+  {id:"en2",cat:"Inglés",title:"Los números del 1 al 10",body:"One, two, three, four, five, six, seven, eight, nine, ten. Practicarlos en voz alta, contando cosas de tu casa, ayuda a que se te queden más rápido."},
+  {id:"en3",cat:"Inglés",title:"Preguntas básicas",body:"'What' es qué, 'Where' es dónde, 'How' es cómo, 'When' es cuándo. Por ejemplo: 'What is this?' (¿qué es esto?) o 'Where is the bathroom?' (¿dónde está el baño?)."},
+  {id:"en4",cat:"Inglés",title:"El verbo to be (ser/estar)",body:"Se usa así: 'I am' (yo soy/estoy), 'you are' (tú eres/estás), 'he/she is' (él/ella es/está). Es uno de los verbos más usados en inglés, vale la pena memorizarlo bien."},
+  {id:"en5",cat:"Inglés",title:"Frases útiles para el trabajo",body:"'Excuse me' (disculpe), 'Can you help me?' (¿puedes ayudarme?), 'Thank you' (gracias), 'I don't understand' (no entiendo). Con estas cuatro frases ya puedes comunicarte en muchas situaciones."},
+
+  {id:"bi1",cat:"Versículos Bíblicos",title:"Salmo 23:1",body:"'El Señor es mi pastor, nada me faltará.' Este versículo habla de confiar en que Dios cuida de nosotros como un pastor cuida de sus ovejas, guiándolas y protegiéndolas."},
+  {id:"bi2",cat:"Versículos Bíblicos",title:"Filipenses 4:13",body:"'Todo lo puedo en Cristo que me fortalece.' Un recordatorio de que, con fe, se puede encontrar la fuerza para enfrentar los momentos difíciles del día a día."},
+  {id:"bi3",cat:"Versículos Bíblicos",title:"Proverbios 3:5-6",body:"'Confía en el Señor de todo corazón, y no te apoyes en tu propia prudencia.' Invita a soltar la necesidad de controlarlo todo y confiar en que hay un plan más grande."},
+  {id:"bi4",cat:"Versículos Bíblicos",title:"Josué 1:9",body:"'Sé fuerte y valiente. No temas ni desmayes, porque el Señor tu Dios estará contigo.' Un mensaje de ánimo para momentos donde da miedo dar el siguiente paso."},
+  {id:"bi5",cat:"Versículos Bíblicos",title:"Juan 3:16",body:"'De tal manera amó Dios al mundo, que dio a su Hijo unigénito.' Uno de los versículos más conocidos, que resume la idea del amor de Dios hacia todas las personas."},
+];
+
+const CATEGORIES = [...new Set(TOPICS.map(t => t.cat))];
+
+const CATEGORY_META = {
+  "Ciencia y Naturaleza": { color: "#7ad3c9", icon: "🔬" },
+  "Tecnología e IA": { color: "#6fa8ff", icon: "🤖" },
+  "Historia y Culturas": { color: "#c48cff", icon: "🏛️" },
+  "Cuerpo y Salud": { color: "#ff6f5b", icon: "❤️" },
+  "Espacio y Universo": { color: "#f4b740", icon: "🪐" },
+  "Curiosidades del Mundo": { color: "#ff8fb3", icon: "🦓" },
+  "Inglés": { color: "#4dd0e1", icon: "🗣️" },
+  "Versículos Bíblicos": { color: "#e3c88f", icon: "📖" },
+};
+function catMeta(cat) { return CATEGORY_META[cat] || { color: "var(--gold)", icon: "✨" }; }
+
+const QUIZZES = {
+  cn1: { q:"¿Por qué vemos el cielo azul?", options:["Porque el aire es azul","Porque el azul se dispersa más que otros colores","Porque el sol es azul"], correct:1 },
+  cn2: { q:"¿Cómo se forman las nubes?", options:["El vapor de agua se enfría y forma gotitas","El aire se pone azul","La lluvia sube desde el suelo"], correct:0 },
+  cn3: { q:"¿Por qué las hojas cambian de color en otoño?", options:["Se pintan con el frío","Dejan de producir clorofila y aparecen otros colores","El sol las tiñe"], correct:1 },
+  cn4: { q:"¿Qué es un ecosistema?", options:["Un tipo de planta","Un lugar donde todo está conectado (plantas, animales, agua)","Una fábrica de oxígeno"], correct:1 },
+  cn5: { q:"¿Por qué el océano es salado?", options:["Porque los peces lo saan","Por la sal que arrastran los ríos desde la tierra","Porque nació salado"], correct:1 },
+  te1: { q:"¿Qué es la inteligencia artificial?", options:["Un robot con sentimientos","Un programa entrenado con datos para reconocer patrones","Una computadora muy rápida"], correct:1 },
+  te2: { q:"¿Qué es 'la nube' (cloud)?", options:["Guardar archivos en internet, no solo en tu dispositivo","Un tipo de clima","Un programa antivirus"], correct:0 },
+  te3: { q:"¿Cómo funciona un código QR?", options:["Guarda información que la cámara lee y decodifica","Es solo una decoración","Funciona con Bluetooth"], correct:0 },
+  te4: { q:"¿Qué es un cobot?", options:["Un robot que reemplaza personas","Un robot diseñado para trabajar junto a personas","Un tipo de computadora"], correct:1 },
+  te5: { q:"¿Cuál es hardware?", options:["Una aplicación","El teclado o la pantalla","Un programa"], correct:1 },
+  hi1: { q:"¿Por qué existen los husos horarios?", options:["Porque la Tierra gira y no todos ven el sol igual","Por tradición religiosa","Porque los relojes son distintos"], correct:0 },
+  hi2: { q:"¿Qué eran las pirámides de Egipto?", options:["Templos para el sol","Tumbas para los faraones","Torres de vigilancia"], correct:1 },
+  hi3: { q:"¿De dónde viene principalmente el español?", options:["Del inglés antiguo","Del latín","Del árabe"], correct:1 },
+  hi4: { q:"¿Qué es una tradición?", options:["Una ley del gobierno","Una costumbre que se repite por generaciones","Un tipo de comida"], correct:1 },
+  hi5: { q:"¿Qué eran las bibliotecas antiguas como la de Alejandría?", options:["Lugares para guardar comida","Intentos de reunir todo el conocimiento en un solo lugar","Templos religiosos"], correct:1 },
+  cs1: { q:"¿Para qué sirve dormir?", options:["Solo para descansar los ojos","Para que el cerebro ordene lo aprendido y el cuerpo se repare","No sirve para nada importante"], correct:1 },
+  cs2: { q:"¿Qué hace el corazón?", options:["Filtra el aire","Bombea sangre con oxígeno por el cuerpo","Produce hormonas de sueño"], correct:1 },
+  cs3: { q:"¿Por qué necesitamos tomar agua?", options:["Solo para no tener sed","Porque más de la mitad de tu cuerpo es agua y la necesita para funcionar","Para bajar de peso"], correct:1 },
+  cs4: { q:"¿Qué son los músculos?", options:["Huesos flexibles","Tejidos que se contraen y estiran para mover el cuerpo","Parte del sistema nervioso"], correct:1 },
+  cs5: { q:"¿Por qué da hambre?", options:["El cerebro avisa que el cuerpo necesita energía","Es solo un hábito","El estómago se llena de aire"], correct:0 },
+  es1: { q:"¿Por qué la Luna cambia de forma?", options:["Cambia de tamaño de verdad","Porque vemos distinta cantidad de la parte iluminada por el sol","Se mueve más rápido o más lento"], correct:1 },
+  es2: { q:"¿Cuánto tarda la luz del sol en llegar a la Tierra?", options:["Unos 8 minutos","Instantáneamente","Un día completo"], correct:0 },
+  es3: { q:"¿Qué es una estrella fugaz?", options:["Una estrella que se apaga","Un pedazo de roca que se quema al entrar a la atmósfera","Un satélite artificial"], correct:1 },
+  es4: { q:"¿Por qué flotan los astronautas?", options:["Porque no hay gravedad en el espacio","Porque están cayendo junto con la estación a gran velocidad","Porque usan motores especiales"], correct:1 },
+  es5: { q:"¿Cuántos planetas hay en el sistema solar?", options:["Siete","Ocho","Nueve, incluyendo a Plutón"], correct:1 },
+  cu1: { q:"¿Cuántos corazones tiene un pulpo?", options:["Uno","Dos","Tres"], correct:2 },
+  cu2: { q:"¿Cuál es el animal más rápido en picada?", options:["El guepardo","El halcón peregrino","El águila calva"], correct:1 },
+  cu3: { q:"¿Por qué la miel nunca se echa a perder?", options:["Tiene muy poca agua y es muy ácida","Se le agregan conservadores","Es un mito, sí se echa a perder"], correct:0 },
+  cu4: { q:"¿Bostezar es contagioso?", options:["No, es un mito","Sí, ver a alguien bostezar da ganas de hacerlo también","Solo en animales, no en humanos"], correct:1 },
+  cu5: { q:"¿Por qué las cebras tienen rayas?", options:["Solo por decoración evolutiva sin motivo","Confunden a insectos y depredadores","Para identificarse entre manadas, nada más"], correct:1 },
+  en1: { q:"¿Cómo se dice 'buenos días' en inglés?", options:["Good night","Good morning","How are you"], correct:1 },
+  en2: { q:"¿Cómo se dice 'siete' en inglés?", options:["Six","Eight","Seven"], correct:2 },
+  en3: { q:"¿Qué pregunta usarías para preguntar '¿dónde?'", options:["What","Where","When"], correct:1 },
+  en4: { q:"¿Cómo se dice 'yo soy/estoy' en inglés?", options:["You are","He is","I am"], correct:2 },
+  en5: { q:"¿Cómo se dice 'gracias' en inglés?", options:["Excuse me","Thank you","Sorry"], correct:1 },
+  bi1: { q:"Según el Salmo 23:1, ¿qué es el Señor?", options:["Mi pastor","Mi rey","Mi maestro"], correct:0 },
+  bi2: { q:"Según Filipenses 4:13, ¿de dónde viene la fuerza?", options:["Del esfuerzo propio","De Cristo, que me fortalece","De la suerte"], correct:1 },
+  bi3: { q:"¿En qué se debe confiar según Proverbios 3:5-6?", options:["En el Señor, de todo corazón","Solo en la propia prudencia","En los demás"], correct:0 },
+  bi4: { q:"¿Qué pide Josué 1:9 que seamos?", options:["Fuertes y valientes","Callados y pacientes","Ricos y sabios"], correct:0 },
+  bi5: { q:"¿Qué hizo Dios según Juan 3:16?", options:["Creó el mundo en 6 días","Amó al mundo y dio a su Hijo","Escribió los mandamientos"], correct:1 },
+};
+const COLORS = ["#f4b740","#ff6f5b","#7ad3c9","#c48cff","#6fa8ff","#ff8fb3"];
+const STYLES = [
+  { id: "bands", label: "Bandas", emoji: "🌫️" },
+  { id: "rocky", label: "Rocoso", emoji: "🪨" },
+  { id: "crystal", label: "Cristalino", emoji: "💎" },
+  { id: "lava", label: "Lava", emoji: "🌋" },
+];
+const REAL_PLANETS = [
+  { id:"mercurio", label:"Mercurio", color:"#9b9b93", style:"rocky", ring:false },
+  { id:"venus", label:"Venus", color:"#e8c39e", style:"bands", ring:false },
+  { id:"tierra", label:"Tierra", color:"#3f8ee8", style:"bands", ring:false },
+  { id:"marte", label:"Marte", color:"#c1440e", style:"rocky", ring:false },
+  { id:"jupiter", label:"Júpiter", color:"#d8a468", style:"bands", ring:false },
+  { id:"saturno", label:"Saturno", color:"#e3c88f", style:"bands", ring:true },
+  { id:"urano", label:"Urano", color:"#7fd4d9", style:"crystal", ring:false },
+  { id:"neptuno", label:"Neptuno", color:"#3457d5", style:"crystal", ring:false },
+];
+
+function catSlug(cat) { return cat.toLowerCase().replace(/[^a-záéíóúñ]+/gi,'-'); }
+
+const BADGES = [
+  { id:"racha-3", title:"Constante", desc:"3 días seguidos aprendiendo", emoji:"🔥", check: p => p.streak >= 3 },
+  { id:"racha-7", title:"Una semana entera", desc:"7 días seguidos aprendiendo", emoji:"🔥", check: p => p.streak >= 7 },
+  { id:"racha-14", title:"Dos semanas de racha", desc:"14 días seguidos aprendiendo", emoji:"🔥", check: p => p.streak >= 14 },
+  { id:"racha-30", title:"Racha imparable", desc:"30 días seguidos aprendiendo", emoji:"🔥", check: p => p.streak >= 30 },
+  ...CATEGORIES.map(cat => ({
+    id: "cat-"+catSlug(cat),
+    title: "Experto en "+cat,
+    desc: "Aprendió todos los temas de "+cat,
+    emoji: "🏅",
+    check: p => TOPICS.filter(t=>t.cat===cat).every(t=>p.unlocked.includes(t.id)),
+  })),
+  { id:"coleccionista", title:"Coleccionista de estrellas", desc:"Aprendió todos los temas disponibles", emoji:"🌟", check: p => p.unlocked.length >= TOPICS.length },
+];
+
+function getEarnedBadges(p) { return BADGES.filter(b => b.check(p)); }
+
+const MOTIVATIONAL_PHRASES = [
+  "Cada cosa que aprendes hoy suma para el resto de tu vida.",
+  "Un poquito cada día se convierte en muchísimo con el tiempo.",
+  "Aprender algo nuevo hoy ya es una victoria.",
+  "Tu curiosidad es tu superpoder — no la pierdas.",
+  "Así se construyen las grandes mentes: un tema a la vez.",
+  "Lo que aprendes hoy, nadie te lo puede quitar.",
+  "Sigue así, vas por buen camino.",
+  "El conocimiento es la única riqueza que crece cuando la compartes.",
+  "Hoy sabes algo que ayer no sabías. Eso ya es progreso.",
+  "La constancia le gana al talento cuando el talento no es constante.",
+  "Cada tema aprendido es un ladrillo más en tu futuro.",
+  "Nunca es tarde ni muy pronto para aprender algo nuevo.",
+  "Sigue encendiendo lunas — tu planeta lo está notando.",
+  "Aprender es el hábito que nunca deja de dar frutos.",
+  "Un día más aprendiendo, un día más creciendo.",
+];
+function randomPhrase() { return MOTIVATIONAL_PHRASES[Math.floor(Math.random()*MOTIVATIONAL_PHRASES.length)]; }
+
+function hash(str) {
+  let h = 0;
+  for (let i=0;i<str.length;i++) h = (h*31 + str.charCodeAt(i)) >>> 0;
+  return h;
+}
+function starPos(id) {
+  const h1 = hash(id+"x"), h2 = hash(id+"y");
+  return { x: 24 + (h1 % 352), y: 20 + (h2 % 190) };
+}
+
+let memoryFallback = [];
+let storageBlocked = false;
+
+function loadProfiles() {
+  try {
+    return JSON.parse(localStorage.getItem('universo-familiar-profiles') || '[]');
+  } catch(e) {
+    storageBlocked = true;
+    return memoryFallback;
+  }
+}
+function saveProfiles(p) {
+  try {
+    localStorage.setItem('universo-familiar-profiles', JSON.stringify(p));
+  } catch(e) {
+    storageBlocked = true;
+    memoryFallback = p;
+  }
+}
+
+let notesFallback = {};
+function loadNotes() {
+  try { return JSON.parse(localStorage.getItem('universo-familiar-notes') || '{}'); }
+  catch(e) { storageBlocked = true; return notesFallback; }
+}
+function saveNotes(notes) {
+  try { localStorage.setItem('universo-familiar-notes', JSON.stringify(notes)); }
+  catch(e) { storageBlocked = true; notesFallback = notes; }
+}
+let notesStore = loadNotes();
+
+const NASA_QUERIES = {
+  mercurio: "Mercury planet", venus: "Venus planet", tierra: "Earth planet",
+  marte: "Mars planet", jupiter: "Jupiter planet", saturno: "Saturn planet",
+  urano: "Uranus planet", neptuno: "Neptune planet",
+};
+function loadPlanetPhotos() {
+  try { return JSON.parse(localStorage.getItem('universo-familiar-planet-photos') || '{}'); }
+  catch(e) { return {}; }
+}
+function savePlanetPhotos() {
+  try { localStorage.setItem('universo-familiar-planet-photos', JSON.stringify(planetPhotoCache)); }
+  catch(e) {}
+}
+let planetPhotoCache = loadPlanetPhotos();
+let planetPhotoRequests = {};
+function ensurePlanetPhoto(planetId) {
+  if (!planetId || planetPhotoCache[planetId] || planetPhotoRequests[planetId]) return;
+  const query = NASA_QUERIES[planetId];
+  if (!query) return;
+  planetPhotoRequests[planetId] = true;
+  fetch(`https://images-api.nasa.gov/search?q=${encodeURIComponent(query)}&media_type=image&page_size=1`)
+    .then(r => r.json())
+    .then(data => {
+      const href = data.collection && data.collection.items[0] && data.collection.items[0].links[0].href;
+      if (href) {
+        planetPhotoCache[planetId] = href;
+        savePlanetPhotos();
+        if (currentProfileId) renderProfile(); else renderHome();
+      }
+    })
+    .catch(() => {});
+}
+
+let profiles = loadProfiles();
+let currentProfileId = null;
+
+function todayKey() { return new Date().toISOString().slice(0,10); }
+function yesterdayKey() { const d=new Date(); d.setDate(d.getDate()-1); return d.toISOString().slice(0,10); }
+
+function el(html) {
+  const t = document.createElement('template');
+  t.innerHTML = html.trim();
+  return t.content.firstElementChild;
+}
+
+function buildPlanetAvatar(p) {
+  const ns = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(ns,"svg");
+  svg.setAttribute("viewBox","0 0 100 100");
+  svg.style.display = "block";
+  const cx = 50, cy = 50, r = 38;
+  const usePhoto = !!(p.realPlanetId && planetPhotoCache[p.realPlanetId]);
+
+  const defs = document.createElementNS(ns,"defs");
+  let fillRef;
+  if (usePhoto) {
+    const patId = "avpat-"+p.id;
+    const pattern = document.createElementNS(ns,"pattern");
+    pattern.setAttribute("id", patId);
+    pattern.setAttribute("patternUnits","objectBoundingBox");
+    pattern.setAttribute("width","1"); pattern.setAttribute("height","1");
+    const image = document.createElementNS(ns,"image");
+    image.setAttributeNS("http://www.w3.org/1999/xlink","href", planetPhotoCache[p.realPlanetId]);
+    image.setAttribute("href", planetPhotoCache[p.realPlanetId]);
+    image.setAttribute("x","0"); image.setAttribute("y","0");
+    image.setAttribute("width","1"); image.setAttribute("height","1");
+    image.setAttribute("preserveAspectRatio","xMidYMid slice");
+    pattern.appendChild(image);
+    defs.appendChild(pattern);
+    fillRef = `url(#${patId})`;
+  } else {
+    const gradId = "avgrad-"+p.id;
+    const grad = document.createElementNS(ns,"radialGradient");
+    grad.setAttribute("id", gradId);
+    grad.setAttribute("cx","35%"); grad.setAttribute("cy","32%"); grad.setAttribute("r","75%");
+    grad.innerHTML = `<stop offset="0%" stop-color="#fff" stop-opacity="0.85"/><stop offset="35%" stop-color="${p.color}"/><stop offset="100%" stop-color="#241f4c"/>`;
+    defs.appendChild(grad);
+    fillRef = `url(#${gradId})`;
+  }
+  const shadeId = "avshade-"+p.id;
+  const shadeGrad = document.createElementNS(ns,"radialGradient");
+  shadeGrad.setAttribute("id", shadeId);
+  shadeGrad.setAttribute("cx","72%"); shadeGrad.setAttribute("cy","75%"); shadeGrad.setAttribute("r","65%");
+  shadeGrad.innerHTML = `<stop offset="0%" stop-color="#000" stop-opacity="0.5"/><stop offset="70%" stop-color="#000" stop-opacity="0.08"/><stop offset="100%" stop-color="#000" stop-opacity="0"/>`;
+  defs.appendChild(shadeGrad);
+  svg.appendChild(defs);
+
+  const learnedCount = (p.unlocked || []).length;
+  if (p.forceRing || learnedCount >= 10) {
+    const ring = document.createElementNS(ns,"ellipse");
+    ring.setAttribute("cx",cx); ring.setAttribute("cy",cy);
+    ring.setAttribute("rx", r+13); ring.setAttribute("ry", (r+13)*0.28);
+    ring.setAttribute("fill","none"); ring.setAttribute("stroke", p.color);
+    ring.setAttribute("stroke-opacity","0.5"); ring.setAttribute("stroke-width","2.5");
+    svg.appendChild(ring);
+  }
+
+  const planet = document.createElementNS(ns,"circle");
+  planet.setAttribute("cx",cx); planet.setAttribute("cy",cy); planet.setAttribute("r",r);
+  planet.setAttribute("fill", fillRef);
+  svg.appendChild(planet);
+
+  if (!usePhoto) {
+    const style = p.style || "bands";
+    if (style === "bands") {
+      const band = document.createElementNS(ns,"ellipse");
+      band.setAttribute("cx",cx); band.setAttribute("cy",cy-5); band.setAttribute("rx", r); band.setAttribute("ry", r*0.22);
+      band.setAttribute("fill","#fff"); band.setAttribute("opacity","0.10");
+      svg.appendChild(band);
+    } else if (style === "rocky") {
+      [[-10,-8,3],[9,5,2.4],[-4,11,2]].forEach(([dx,dy,cr]) => {
+        const c = document.createElementNS(ns,"circle");
+        c.setAttribute("cx",cx+dx); c.setAttribute("cy",cy+dy); c.setAttribute("r",cr);
+        c.setAttribute("fill","#000"); c.setAttribute("opacity","0.15");
+        svg.appendChild(c);
+      });
+    } else if (style === "crystal") {
+      for (let i=0;i<5;i++) {
+        const angle = (i/5)*Math.PI*2;
+        const line = document.createElementNS(ns,"line");
+        line.setAttribute("x1",cx); line.setAttribute("y1",cy);
+        line.setAttribute("x2", cx+Math.cos(angle)*r); line.setAttribute("y2", cy+Math.sin(angle)*r);
+        line.setAttribute("stroke","#fff"); line.setAttribute("stroke-width","1"); line.setAttribute("opacity","0.2");
+        svg.appendChild(line);
+      }
+    } else if (style === "lava") {
+      const blob = document.createElementNS(ns,"ellipse");
+      blob.setAttribute("cx",cx); blob.setAttribute("cy",cy); blob.setAttribute("rx", r*0.55); blob.setAttribute("ry", r*0.32);
+      blob.setAttribute("fill","#fff2c2"); blob.setAttribute("opacity","0.18");
+      svg.appendChild(blob);
+    }
+  }
+
+  const shade = document.createElementNS(ns,"circle");
+  shade.setAttribute("cx",cx); shade.setAttribute("cy",cy); shade.setAttribute("r",r);
+  shade.setAttribute("fill", `url(#${shadeId})`);
+  svg.appendChild(shade);
+
+  const rim = document.createElementNS(ns,"circle");
+  rim.setAttribute("cx",cx); rim.setAttribute("cy",cy); rim.setAttribute("r",r+0.5);
+  rim.setAttribute("fill","none"); rim.setAttribute("stroke", p.color); rim.setAttribute("stroke-opacity","0.5"); rim.setAttribute("stroke-width","1");
+  svg.appendChild(rim);
+
+  return svg;
+}
+
+function renderHome() {
+  const app = document.getElementById('app');
+  app.innerHTML = '';
+  app.appendChild(el(`
+    <div class="home-header">
+      <div class="eyebrow">Aprendizaje en familia</div>
+      <h1 class="title">Universo Familiar</h1>
+      <p class="subtitle">Cada quien tiene su propio planeta. Cada cosa nueva que aprenden le suma una luna.</p>
+    </div>
+  `));
+
+  if (storageBlocked) {
+    app.appendChild(el(`
+      <div style="background:var(--card);border:1px solid var(--coral);border-radius:14px;padding:12px 14px;margin-bottom:16px;font-size:12.5px;color:var(--muted);">
+        ⚠️ Este navegador no está guardando el progreso de forma permanente. Ábrela directamente desde su navegador (no dentro de otra app) para que tu progreso se guarde entre sesiones.
+      </div>
+    `));
+  }
+
+  const grid = el(`<div class="planet-grid"></div>`);
+  profiles.forEach(rawP => {
+    const p = ensureProfileDefaults(rawP);
+    if (p.realPlanetId) ensurePlanetPhoto(p.realPlanetId);
+    const learnedCount = p.unlocked.length;
+    const card = el(`
+      <div class="planet-card">
+        <div class="planet-avatar"></div>
+        <div class="planet-name">${p.name}</div>
+        <div class="planet-meta">${learnedCount} luna${learnedCount===1?'':'s'} · 🔥 ${p.streak}</div>
+      </div>
+    `);
+    card.querySelector('.planet-avatar').appendChild(buildPlanetAvatar(p));
+    card.onclick = () => { currentProfileId = p.id; renderProfile(); };
+    grid.appendChild(card);
+  });
+  const addCard = el(`
+    <div class="add-card">
+      <div class="add-plus">＋</div>
+      <div>Agregar familiar</div>
+    </div>
+  `);
+  addCard.onclick = () => showAddProfileSheet();
+  grid.appendChild(addCard);
+  app.appendChild(grid);
+
+  if (profiles.length > 0) {
+    const progressBtn = el(`<button class="cta" style="background:transparent;border:1px solid var(--line);color:var(--text);">📊 Ver progreso familiar</button>`);
+    progressBtn.onclick = () => showFamilyProgressSheet();
+    app.appendChild(progressBtn);
+  }
+}
+
+function showAddProfileSheet() {
+  let chosenColor = COLORS[0];
+  const overlay = el(`
+    <div class="overlay">
+      <div class="sheet">
+        <button class="sheet-close">✕</button>
+        <h2>Nuevo familiar</h2>
+        <p class="subtitle">Dale un nombre y un color a su cielo.</p>
+        <input class="name-input" placeholder="Nombre" maxlength="20" />
+        <div class="swatch-row"></div>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:10px;">
+          <input type="color" id="newColorPicker" style="width:44px;height:34px;border:1px solid var(--line);border-radius:8px;background:var(--card);cursor:pointer;padding:2px;" />
+          <span style="font-size:12.5px;color:var(--muted);">O elige cualquier color</span>
+        </div>
+        <button class="cta" id="createBtn">Crear perfil</button>
+      </div>
+    </div>
+  `);
+  overlay.querySelector('.sheet-close').onclick = () => overlay.remove();
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+
+  const swatchRow = overlay.querySelector('.swatch-row');
+  COLORS.forEach((c,i) => {
+    const sw = el(`<div class="swatch" style="background:${c}"></div>`);
+    if (i===0) sw.classList.add('selected');
+    sw.onclick = () => {
+      swatchRow.querySelectorAll('.swatch').forEach(s=>s.classList.remove('selected'));
+      sw.classList.add('selected');
+      chosenColor = c;
+      newColorPicker.value = c;
+    };
+    swatchRow.appendChild(sw);
+  });
+
+  const newColorPicker = overlay.querySelector('#newColorPicker');
+  newColorPicker.value = chosenColor;
+  newColorPicker.oninput = () => {
+    chosenColor = newColorPicker.value;
+    swatchRow.querySelectorAll('.swatch').forEach(s=>s.classList.remove('selected'));
+  };
+
+  overlay.querySelector('#createBtn').onclick = () => {
+    const name = overlay.querySelector('.name-input').value.trim();
+    if (!name) return;
+    const newProfile = { id: 'p'+Date.now(), name, color: chosenColor, style: 'bands', forceRing: false, realPlanetId: null, unlocked: [], streak: 0, lastActive: null, seenBadges: [], activityLog: {} };
+    profiles.push(newProfile);
+    saveProfiles(profiles);
+    overlay.remove();
+    renderHome();
+  };
+  document.body.appendChild(overlay);
+}
+
+function ensureProfileDefaults(p) {
+  if (!p.style) p.style = 'bands';
+  if (!p.seenBadges) p.seenBadges = [];
+  if (p.forceRing === undefined) p.forceRing = false;
+  if (!p.activityLog) p.activityLog = {};
+  if (p.realPlanetId === undefined) p.realPlanetId = null;
+  return p;
+}
+
+function getProfile() {
+  const p = profiles.find(p => p.id === currentProfileId);
+  return p ? ensureProfileDefaults(p) : p;
+}
+
+function renderProfile() {
+  const p = getProfile();
+  const app = document.getElementById('app');
+  app.innerHTML = '';
+
+  const top = el(`
+    <div class="top-row">
+      <button class="back-btn">← Todos</button>
+      <div class="streak-chip">🔥 ${p.streak} día${p.streak===1?'':'s'}</div>
+    </div>
+  `);
+  top.querySelector('.back-btn').onclick = () => renderHome();
+  app.appendChild(top);
+
+  if (p.realPlanetId) ensurePlanetPhoto(p.realPlanetId);
+  const profileHeader = el(`
+    <div class="profile-header">
+      <div class="planet-avatar" style="margin:0 auto 10px;"></div>
+      <h2 class="title" style="font-size:22px;">El planeta de ${p.name}</h2>
+    </div>
+  `);
+  profileHeader.querySelector('.planet-avatar').appendChild(buildPlanetAvatar(p));
+  app.appendChild(profileHeader);
+
+  const skyWrap = el(`<div class="sky-wrap"></div>`);
+  skyWrap.appendChild(buildPlanetScene(p));
+  app.appendChild(skyWrap);
+
+  const pct = Math.round((p.unlocked.length / TOPICS.length) * 100);
+  app.appendChild(el(`
+    <div class="progress-row">
+      <span>${p.unlocked.length} de ${TOPICS.length} lunas ganadas</span>
+      <span>${pct}%</span>
+    </div>
+  `));
+  const barWrap = el(`<div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>`);
+  app.appendChild(barWrap);
+
+  const ctaBtn = el(`<button class="cta">Descubrir algo nuevo</button>`);
+  ctaBtn.onclick = () => showCategorySheet(p);
+  app.appendChild(ctaBtn);
+
+  const customizeBtn = el(`<button class="cta" style="background:transparent;border:1px solid var(--line);color:var(--text);margin-top:10px;">🎨 Personalizar planeta</button>`);
+  customizeBtn.onclick = () => showCustomizeSheet(p);
+  app.appendChild(customizeBtn);
+
+  const earned = getEarnedBadges(p);
+  app.appendChild(el(`
+    <div class="eyebrow" style="margin-top:26px;">Logros</div>
+    <h3 style="font-size:16px;margin:4px 0 12px;">${earned.length} de ${BADGES.length} insignias</h3>
+  `));
+  const badgeGrid = el(`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;"></div>`);
+  BADGES.forEach(b => {
+    const unlocked = b.check(p);
+    const item = el(`
+      <div title="${b.desc}" style="background:${unlocked?'var(--card)':'transparent'};border:1px solid ${unlocked?'var(--line)':'#2a2557'};border-radius:14px;padding:10px 4px;text-align:center;opacity:${unlocked?'1':'0.35'};box-shadow:${unlocked?'0 3px 10px rgba(8,6,24,0.3)':'none'};">
+        <div style="font-size:20px;">${b.emoji}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px;line-height:1.2;">${b.title}</div>
+      </div>
+    `);
+    badgeGrid.appendChild(item);
+  });
+  app.appendChild(badgeGrid);
+}
+
+function buildPlanetScene(p) {
+  const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
+  svg.setAttribute("viewBox","0 0 400 260");
+  svg.setAttribute("width","100%");
+  svg.style.display = "block";
+  const ns = svg.namespaceURI;
+  const cx = 200, cy = 130;
+
+  // background stars
+  for (let i=0;i<40;i++) {
+    const h = hash("bg"+i);
+    const bx = h % 400, by = (h*7) % 260, r = 0.6 + (h % 3)*0.3;
+    const dot = document.createElementNS(ns,"circle");
+    dot.setAttribute("cx",bx); dot.setAttribute("cy",by); dot.setAttribute("r",r);
+    dot.setAttribute("fill","#4a4480"); dot.setAttribute("opacity","0.5");
+    svg.appendChild(dot);
+  }
+
+  const usePhoto = !!(p.realPlanetId && planetPhotoCache[p.realPlanetId]);
+  const defs = document.createElementNS(ns,"defs");
+  let fillRef;
+  if (usePhoto) {
+    const patId = "photo-"+p.id;
+    const pattern = document.createElementNS(ns,"pattern");
+    pattern.setAttribute("id", patId);
+    pattern.setAttribute("patternUnits","objectBoundingBox");
+    pattern.setAttribute("width","1"); pattern.setAttribute("height","1");
+    const image = document.createElementNS(ns,"image");
+    image.setAttributeNS("http://www.w3.org/1999/xlink","href", planetPhotoCache[p.realPlanetId]);
+    image.setAttribute("href", planetPhotoCache[p.realPlanetId]);
+    image.setAttribute("x","0"); image.setAttribute("y","0");
+    image.setAttribute("width","1"); image.setAttribute("height","1");
+    image.setAttribute("preserveAspectRatio","xMidYMid slice");
+    pattern.appendChild(image);
+    defs.appendChild(pattern);
+    fillRef = `url(#${patId})`;
+  } else {
+    const grad = document.createElementNS(ns,"radialGradient");
+    const gradId = "grad-"+p.id;
+    grad.setAttribute("id", gradId);
+    grad.setAttribute("cx","35%"); grad.setAttribute("cy","32%"); grad.setAttribute("r","75%");
+    grad.innerHTML = `<stop offset="0%" stop-color="#fff" stop-opacity="0.85"/><stop offset="35%" stop-color="${p.color}"/><stop offset="100%" stop-color="#241f4c"/>`;
+    defs.appendChild(grad);
+    fillRef = `url(#${gradId})`;
+  }
+
+  const shadeGrad = document.createElementNS(ns,"radialGradient");
+  const shadeId = "shade-"+p.id;
+  shadeGrad.setAttribute("id", shadeId);
+  shadeGrad.setAttribute("cx","72%"); shadeGrad.setAttribute("cy","75%"); shadeGrad.setAttribute("r","65%");
+  shadeGrad.innerHTML = `<stop offset="0%" stop-color="#000" stop-opacity="0.55"/><stop offset="70%" stop-color="#000" stop-opacity="0.08"/><stop offset="100%" stop-color="#000" stop-opacity="0"/>`;
+  defs.appendChild(shadeGrad);
+  svg.appendChild(defs);
+
+  const learnedCount = p.unlocked.length;
+
+  // outer ring milestones (or forced for Saturn-style planets)
+  if (learnedCount >= 20) {
+    const r2 = document.createElementNS(ns,"ellipse");
+    r2.setAttribute("cx",cx); r2.setAttribute("cy",cy); r2.setAttribute("rx",92); r2.setAttribute("ry",22);
+    r2.setAttribute("fill","none"); r2.setAttribute("stroke",p.color); r2.setAttribute("stroke-opacity","0.35"); r2.setAttribute("stroke-width","1.5");
+    r2.setAttribute("class","ring-outer");
+    svg.appendChild(r2);
+  }
+  if (learnedCount >= 10 || p.forceRing) {
+    const r1 = document.createElementNS(ns,"ellipse");
+    r1.setAttribute("cx",cx); r1.setAttribute("cy",cy); r1.setAttribute("rx",76); r1.setAttribute("ry",17);
+    r1.setAttribute("fill","none"); r1.setAttribute("stroke",p.color); r1.setAttribute("stroke-opacity","0.45"); r1.setAttribute("stroke-width","1.5");
+    r1.setAttribute("class","ring-outer");
+    svg.appendChild(r1);
+  }
+
+  // glow halo
+  const halo = document.createElementNS(ns,"circle");
+  halo.setAttribute("cx",cx); halo.setAttribute("cy",cy); halo.setAttribute("r","62");
+  halo.setAttribute("fill",p.color); halo.setAttribute("class","planet-halo");
+  svg.appendChild(halo);
+
+  // planet body
+  const planet = document.createElementNS(ns,"circle");
+  planet.setAttribute("cx",cx); planet.setAttribute("cy",cy); planet.setAttribute("r","44");
+  planet.setAttribute("fill", fillRef);
+  svg.appendChild(planet);
+
+  // rotating texture bands (clipped to planet) — skipped when using a real NASA photo
+  if (!usePhoto) {
+    const clipId = "clip-"+p.id;
+    const clip = document.createElementNS(ns,"clipPath");
+    clip.setAttribute("id", clipId);
+    const clipCircle = document.createElementNS(ns,"circle");
+    clipCircle.setAttribute("cx",cx); clipCircle.setAttribute("cy",cy); clipCircle.setAttribute("r","44");
+    clip.appendChild(clipCircle);
+    defs.appendChild(clip);
+
+    const bandGroup = document.createElementNS(ns,"g");
+    bandGroup.setAttribute("clip-path",`url(#${clipId})`);
+    bandGroup.setAttribute("class", p.style === "lava" ? "planet-halo" : "planet-band");
+    const style = p.style || "bands";
+
+    if (style === "bands") {
+      [0,1,2].forEach(i => {
+        const band = document.createElementNS(ns,"ellipse");
+        band.setAttribute("cx", cx + (i-1)*20); band.setAttribute("cy", cy - 10 + i*14);
+        band.setAttribute("rx","50"); band.setAttribute("ry","10");
+        band.setAttribute("fill","#fff"); band.setAttribute("opacity", 0.06 + i*0.03);
+        bandGroup.appendChild(band);
+      });
+    } else if (style === "rocky") {
+      for (let i=0;i<10;i++) {
+        const h1 = hash("rock"+p.id+i), h2 = hash("rockY"+p.id+i);
+        const rx = cx - 44 + (h1 % 88), ry = cy - 44 + (h2 % 88);
+        const crater = document.createElementNS(ns,"circle");
+        crater.setAttribute("cx",rx); crater.setAttribute("cy",ry); crater.setAttribute("r", 2 + (h1%4));
+        crater.setAttribute("fill","#000"); crater.setAttribute("opacity","0.15");
+        bandGroup.appendChild(crater);
+      }
+    } else if (style === "crystal") {
+      for (let i=0;i<7;i++) {
+        const angle = (i / 7) * Math.PI * 2;
+        const line = document.createElementNS(ns,"line");
+        line.setAttribute("x1",cx); line.setAttribute("y1",cy);
+        line.setAttribute("x2", cx + Math.cos(angle)*46); line.setAttribute("y2", cy + Math.sin(angle)*46);
+        line.setAttribute("stroke","#fff"); line.setAttribute("stroke-width","1"); line.setAttribute("opacity","0.25");
+        bandGroup.appendChild(line);
+      }
+    } else if (style === "lava") {
+      [0,1,2].forEach(i => {
+        const blob = document.createElementNS(ns,"ellipse");
+        blob.setAttribute("cx", cx + (i-1)*16); blob.setAttribute("cy", cy + (i-1)*10);
+        blob.setAttribute("rx","26"); blob.setAttribute("ry","14");
+        blob.setAttribute("fill","#fff2c2"); blob.setAttribute("opacity", 0.12 + i*0.05);
+        bandGroup.appendChild(blob);
+      });
+    }
+    svg.appendChild(bandGroup);
+  }
+
+  // shading overlay for sphere volume (dark side)
+  const shadeCircle = document.createElementNS(ns,"circle");
+  shadeCircle.setAttribute("cx",cx); shadeCircle.setAttribute("cy",cy); shadeCircle.setAttribute("r","44");
+  shadeCircle.setAttribute("fill",`url(#${shadeId})`);
+  svg.appendChild(shadeCircle);
+
+  // thin atmosphere rim
+  const rim = document.createElementNS(ns,"circle");
+  rim.setAttribute("cx",cx); rim.setAttribute("cy",cy); rim.setAttribute("r","44.5");
+  rim.setAttribute("fill","none"); rim.setAttribute("stroke", p.color); rim.setAttribute("stroke-opacity","0.5"); rim.setAttribute("stroke-width","1");
+  svg.appendChild(rim);
+
+  // orbiting moons (one per unlocked topic)
+  if (learnedCount > 0) {
+    const orbitGroup = document.createElementNS(ns,"g");
+    orbitGroup.setAttribute("class","orbit-group");
+    p.unlocked.forEach((id, i) => {
+      const shell = Math.floor(i / 8);
+      const inShellIndex = i % 8;
+      const inShellCount = Math.min(8, learnedCount - shell*8);
+      const radius = 70 + shell*20;
+      const angle = (inShellIndex / inShellCount) * Math.PI * 2 + shell*0.4;
+      const mx = cx + Math.cos(angle) * radius;
+      const my = cy + Math.sin(angle) * radius * 0.55;
+      const moon = document.createElementNS(ns,"circle");
+      moon.setAttribute("cx",mx); moon.setAttribute("cy",my); moon.setAttribute("r","4");
+      moon.setAttribute("fill", p.color);
+      orbitGroup.appendChild(moon);
+      const moonGlow = document.createElementNS(ns,"circle");
+      moonGlow.setAttribute("cx",mx); moonGlow.setAttribute("cy",my); moonGlow.setAttribute("r","7");
+      moonGlow.setAttribute("fill", p.color); moonGlow.setAttribute("opacity","0.25");
+      orbitGroup.insertBefore(moonGlow, moon);
+    });
+    svg.appendChild(orbitGroup);
+  } else {
+    const txt = document.createElementNS(ns,"text");
+    txt.setAttribute("x", cx); txt.setAttribute("y", 220);
+    txt.setAttribute("text-anchor","middle");
+    txt.setAttribute("fill","#7a72ab");
+    txt.setAttribute("font-size","12.5");
+    txt.setAttribute("font-family","Sora, sans-serif");
+    txt.textContent = "Aún sin lunas — descubre algo para ganar la primera";
+    svg.appendChild(txt);
+  }
+
+  return svg;
+}
+
+function showCustomizeSheet(p) {
+  let chosenColor = p.color;
+  let chosenStyle = p.style;
+  let chosenRing = !!p.forceRing;
+  let chosenRealPlanetId = p.realPlanetId || null;
+  const overlay = el(`
+    <div class="overlay">
+      <div class="sheet">
+        <button class="sheet-close">✕</button>
+        <h2>Personalizar planeta</h2>
+        <p class="subtitle">Elige un planeta real o arma el tuyo desde cero.</p>
+        <div class="eyebrow" style="margin-top:16px;">Planetas reales</div>
+        <div id="realPlanetGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px;"></div>
+        <div class="eyebrow" style="margin-top:20px;">Color</div>
+        <div class="swatch-row"></div>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:10px;">
+          <input type="color" id="colorPicker" style="width:44px;height:34px;border:1px solid var(--line);border-radius:8px;background:var(--card);cursor:pointer;padding:2px;" />
+          <span style="font-size:12.5px;color:var(--muted);">O elige cualquier color que quieras</span>
+        </div>
+        <div class="eyebrow" style="margin-top:18px;">Estilo</div>
+        <div class="cat-list" id="styleList"></div>
+        <button class="cta" id="saveBtn">Guardar</button>
+      </div>
+    </div>
+  `);
+  overlay.querySelector('.sheet-close').onclick = () => overlay.remove();
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+
+  const realGrid = overlay.querySelector('#realPlanetGrid');
+  REAL_PLANETS.forEach(rp => {
+    const item = el(`
+      <div class="real-planet-item" style="text-align:center;cursor:pointer;border-radius:12px;padding:6px 2px;${rp.id===chosenRealPlanetId?'outline:2px solid var(--gold);':''}">
+        <div style="width:36px;height:36px;border-radius:50%;margin:0 auto 4px;background:radial-gradient(circle at 32% 28%, rgba(255,255,255,0.85) 0%, transparent 30%), radial-gradient(circle at 65% 70%, rgba(0,0,0,0.35) 0%, transparent 55%), ${rp.color};"></div>
+        <div style="font-size:10px;color:var(--muted);">${rp.label}</div>
+      </div>
+    `);
+    item.onclick = () => {
+      chosenColor = rp.color;
+      chosenStyle = rp.style;
+      chosenRing = rp.ring;
+      chosenRealPlanetId = rp.id;
+      ensurePlanetPhoto(rp.id);
+      colorPicker.value = rp.color;
+      swatchRow.querySelectorAll('.swatch').forEach(s=>s.classList.remove('selected'));
+      styleList.querySelectorAll('.cat-item').forEach((el2,i) => {
+        const match = STYLES[i].id === rp.style;
+        el2.style.borderColor = match ? 'var(--gold)' : 'var(--line)';
+        el2.querySelector('.cat-item-count').textContent = match ? 'Elegido' : '';
+      });
+      realGrid.querySelectorAll('.real-planet-item').forEach(it => it.style.outline = 'none');
+      item.style.outline = '2px solid var(--gold)';
+    };
+    realGrid.appendChild(item);
+  });
+
+  const swatchRow = overlay.querySelector('.swatch-row');
+  COLORS.forEach(c => {
+    const sw = el(`<div class="swatch" style="background:${c}"></div>`);
+    if (c === chosenColor) sw.classList.add('selected');
+    sw.onclick = () => {
+      swatchRow.querySelectorAll('.swatch').forEach(s=>s.classList.remove('selected'));
+      sw.classList.add('selected');
+      chosenColor = c;
+      chosenRealPlanetId = null;
+      realGrid.querySelectorAll('.real-planet-item').forEach(it => it.style.outline = 'none');
+      colorPicker.value = c;
+    };
+    swatchRow.appendChild(sw);
+  });
+
+  const colorPicker = overlay.querySelector('#colorPicker');
+  colorPicker.value = chosenColor;
+  colorPicker.oninput = () => {
+    chosenColor = colorPicker.value;
+    chosenRealPlanetId = null;
+    realGrid.querySelectorAll('.real-planet-item').forEach(it => it.style.outline = 'none');
+    swatchRow.querySelectorAll('.swatch').forEach(s=>s.classList.remove('selected'));
+  };
+
+  const styleList = overlay.querySelector('#styleList');
+  STYLES.forEach(s => {
+    const item = el(`
+      <div class="cat-item" style="${s.id===chosenStyle?'border-color:var(--gold);':''}">
+        <span class="cat-item-name">${s.emoji} ${s.label}</span>
+        <span class="cat-item-count">${s.id===chosenStyle?'Elegido':''}</span>
+      </div>
+    `);
+    item.onclick = () => {
+      chosenStyle = s.id;
+      styleList.querySelectorAll('.cat-item').forEach(el2 => { el2.style.borderColor = 'var(--line)'; el2.querySelector('.cat-item-count').textContent = ''; });
+      item.style.borderColor = 'var(--gold)';
+      item.querySelector('.cat-item-count').textContent = 'Elegido';
+    };
+    styleList.appendChild(item);
+  });
+
+  overlay.querySelector('#saveBtn').onclick = () => {
+    p.color = chosenColor;
+    p.style = chosenStyle;
+    p.forceRing = chosenRing;
+    p.realPlanetId = chosenRealPlanetId;
+    if (chosenRealPlanetId) ensurePlanetPhoto(chosenRealPlanetId);
+    saveProfiles(profiles);
+    overlay.remove();
+    renderProfile();
+  };
+  document.body.appendChild(overlay);
+}
+
+function showFamilyProgressSheet() {
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    days.push(d.toISOString().slice(0,10));
+  }
+  const dayLabels = days.map(d => {
+    const dt = new Date(d + 'T00:00:00');
+    return ['D','L','M','X','J','V','S'][dt.getDay()];
+  });
+
+  const overlay = el(`
+    <div class="overlay">
+      <div class="sheet">
+        <button class="sheet-close">✕</button>
+        <div class="eyebrow">Últimos 7 días</div>
+        <h2 style="margin-bottom:6px;">Progreso familiar</h2>
+        <p class="subtitle" style="margin-bottom:16px;">Un punto encendido significa que aprendió algo ese día.</p>
+        <div id="progressTable"></div>
+      </div>
+    </div>
+  `);
+  overlay.querySelector('.sheet-close').onclick = () => overlay.remove();
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+
+  const table = overlay.querySelector('#progressTable');
+
+  const headerRow = el(`<div style="display:flex;align-items:center;margin-bottom:10px;padding-left:106px;"></div>`);
+  dayLabels.forEach(l => {
+    headerRow.appendChild(el(`<div style="flex:1;text-align:center;font-size:11px;color:var(--muted);">${l}</div>`));
+  });
+  table.appendChild(headerRow);
+
+  profiles.forEach(rawP => {
+    const p = ensureProfileDefaults(rawP);
+    const row = el(`<div style="display:flex;align-items:center;margin-bottom:12px;"></div>`);
+    row.appendChild(el(`
+      <div style="width:106px;display:flex;align-items:center;gap:8px;flex-shrink:0;">
+        <div style="width:22px;height:22px;border-radius:50%;background:${p.color};flex-shrink:0;"></div>
+        <span style="font-size:12.5px;font-weight:600;">${p.name}</span>
+      </div>
+    `));
+    days.forEach(d => {
+      const active = !!p.activityLog[d];
+      row.appendChild(el(`
+        <div style="flex:1;display:flex;justify-content:center;">
+          <div style="width:16px;height:16px;border-radius:50%;background:${active ? p.color : 'transparent'};border:1.5px solid ${active ? p.color : 'var(--line)'};"></div>
+        </div>
+      `));
+    });
+    table.appendChild(row);
+  });
+
+  document.body.appendChild(overlay);
+}
+
+function showCategorySheet(p) {
+  const overlay = el(`
+    <div class="overlay">
+      <div class="sheet">
+        <button class="sheet-close">✕</button>
+        <div class="eyebrow">Elige un tema</div>
+        <h2>¿Qué te late hoy?</h2>
+        <div class="cat-list"></div>
+      </div>
+    </div>
+  `);
+  overlay.querySelector('.sheet-close').onclick = () => overlay.remove();
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+
+  const list = overlay.querySelector('.cat-list');
+  CATEGORIES.forEach(cat => {
+    const total = TOPICS.filter(t=>t.cat===cat).length;
+    const done = TOPICS.filter(t=>t.cat===cat && p.unlocked.includes(t.id)).length;
+    const meta = catMeta(cat);
+    const item = el(`
+      <div class="cat-item" style="border-left:4px solid ${meta.color};">
+        <span class="cat-item-name">${meta.icon} ${cat}</span>
+        <span class="cat-item-count">${done}/${total}</span>
+      </div>
+    `);
+    item.onclick = () => { overlay.remove(); showTopicSheet(p, cat); };
+    list.appendChild(item);
+  });
+  document.body.appendChild(overlay);
+}
+
+function showTopicSheet(p, cat) {
+  const meta = catMeta(cat);
+  const overlay = el(`
+    <div class="overlay">
+      <div class="sheet">
+        <button class="sheet-close">✕</button>
+        <div class="eyebrow" style="color:${meta.color};">${meta.icon} ${cat}</div>
+        <h2 style="margin-bottom:14px;">Temas</h2>
+        <div class="topic-list"></div>
+      </div>
+    </div>
+  `);
+  overlay.querySelector('.sheet-close').onclick = () => overlay.remove();
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+
+  const list = overlay.querySelector('.topic-list');
+  TOPICS.filter(t=>t.cat===cat).forEach(t => {
+    const learned = p.unlocked.includes(t.id);
+    const item = el(`
+      <div class="topic-item ${learned?'learned':''}">
+        <span class="topic-star">${learned?'⭐':'☆'}</span>
+        <span class="topic-name">${t.title}</span>
+      </div>
+    `);
+    if (!learned) item.onclick = () => { overlay.remove(); showDetailSheet(p, t); };
+    list.appendChild(item);
+  });
+  document.body.appendChild(overlay);
+}
+
+function showDetailSheet(p, t) {
+  const existingNotes = notesStore[t.id] || [];
+  const notesHtml = existingNotes.length ? `
+    <div class="eyebrow" style="margin-top:16px;">Notas de la familia</div>
+    <div style="margin-top:8px;">
+      ${existingNotes.map(n => `
+        <div style="background:var(--card);border-radius:10px;padding:9px 12px;margin-bottom:6px;font-size:13px;">
+          <strong style="color:var(--gold);">${n.author}:</strong> ${n.text}
+        </div>
+      `).join('')}
+    </div>
+  ` : '';
+
+  const detailMeta = catMeta(t.cat);
+  const overlay = el(`
+    <div class="overlay">
+      <div class="sheet detail-card">
+        <button class="sheet-close">✕</button>
+        <div class="detail-cat" style="color:${detailMeta.color};">${detailMeta.icon} ${t.cat}</div>
+        <h2 class="detail-title">${t.title}</h2>
+        <p class="detail-body">${t.body}</p>
+        ${notesHtml}
+        <div class="eyebrow" style="margin-top:16px;">Deja tu nota (opcional)</div>
+        <textarea id="noteInput" placeholder="Algo que te haya sorprendido..." maxlength="140" style="width:100%;margin-top:6px;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--text);font-family:'Sora',sans-serif;font-size:13px;resize:none;" rows="2"></textarea>
+        <button class="cta" style="margin-top:16px;">Ya lo aprendí ✨</button>
+      </div>
+    </div>
+  `);
+  overlay.querySelector('.sheet-close').onclick = () => overlay.remove();
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+  overlay.querySelector('.cta').onclick = () => {
+    const noteText = overlay.querySelector('#noteInput').value.trim();
+    overlay.remove();
+    showQuizSheet(p, t, noteText);
+  };
+  document.body.appendChild(overlay);
+}
+
+function showQuizSheet(p, t, noteText) {
+  const quiz = QUIZZES[t.id];
+  if (!quiz) { finishLearning(p, t, noteText, null); return; }
+
+  const overlay = el(`
+    <div class="overlay">
+      <div class="sheet detail-card">
+        <button class="sheet-close">✕</button>
+        <div class="eyebrow">Pregunta rápida</div>
+        <h2 style="font-size:18px;margin:8px 0 16px;">${quiz.q}</h2>
+        <div id="quizOptions"></div>
+      </div>
+    </div>
+  `);
+  overlay.querySelector('.sheet-close').onclick = () => { overlay.remove(); finishLearning(p, t, noteText, null); };
+  overlay.onclick = (e) => { if (e.target === overlay) { overlay.remove(); finishLearning(p, t, noteText, null); } };
+
+  const optionsWrap = overlay.querySelector('#quizOptions');
+  quiz.options.forEach((opt, i) => {
+    const btn = el(`<div class="cat-item" style="cursor:pointer;"><span class="cat-item-name">${opt}</span></div>`);
+    btn.onclick = () => {
+      const correct = i === quiz.correct;
+      optionsWrap.querySelectorAll('.cat-item').forEach((it, j) => {
+        it.style.cursor = 'default';
+        it.onclick = null;
+        if (j === quiz.correct) it.style.borderColor = '#4caf50';
+        if (j === i && !correct) it.style.borderColor = 'var(--coral)';
+      });
+      const feedback = el(`
+        <div style="margin-top:16px;text-align:center;">
+          <div style="font-size:14px;color:${correct ? '#4caf50' : 'var(--coral)'};font-weight:600;margin-bottom:12px;">
+            ${correct ? '¡Correcto! 🌟' : 'Casi — la respuesta correcta está marcada en verde'}
+          </div>
+          <button class="cta" id="continueBtn">Continuar</button>
+        </div>
+      `);
+      overlay.querySelector('.sheet').appendChild(feedback);
+      overlay.querySelector('#continueBtn').onclick = () => {
+        overlay.remove();
+        finishLearning(p, t, noteText, correct);
+      };
+    };
+    optionsWrap.appendChild(btn);
+  });
+  document.body.appendChild(overlay);
+}
+
+function finishLearning(p, t, noteText, quizCorrect) {
+  if (!p.unlocked.includes(t.id)) p.unlocked.push(t.id);
+  const today = todayKey();
+  if (p.lastActive !== today) {
+    p.streak = (p.lastActive === yesterdayKey()) ? p.streak + 1 : 1;
+    p.lastActive = today;
+  }
+  p.activityLog[today] = (p.activityLog[today] || 0) + 1;
+  if (noteText) {
+    if (!notesStore[t.id]) notesStore[t.id] = [];
+    notesStore[t.id].push({ author: p.name, text: noteText, date: today });
+    saveNotes(notesStore);
+  }
+  const earnedNow = getEarnedBadges(p);
+  const newBadges = earnedNow.filter(b => !p.seenBadges.includes(b.id));
+  p.seenBadges = earnedNow.map(b => b.id);
+  saveProfiles(profiles);
+  renderProfile();
+  showLearnedConfirmation(newBadges, quizCorrect);
+}
+
+function showLearnedConfirmation(newBadges, quizCorrect) {
+  const badgeHtml = newBadges.length
+    ? `<div style="font-size:34px;margin-bottom:6px;">${newBadges.map(b=>b.emoji).join(' ')}</div>
+       <div class="eyebrow" style="color:var(--gold);">¡Nueva insignia!</div>
+       <div style="font-weight:600;font-size:15px;margin-bottom:14px;">${newBadges.map(b=>b.title).join(', ')}</div>`
+    : `<div style="font-size:34px;margin-bottom:10px;">✨</div>`;
+  const quizNote = quizCorrect === true ? `<div style="font-size:12.5px;color:#4caf50;margin-bottom:10px;">Acertaste la pregunta de repaso 🌟</div>` : '';
+  const overlay = el(`
+    <div class="overlay">
+      <div class="sheet detail-card" style="text-align:center;">
+        <button class="sheet-close">✕</button>
+        ${badgeHtml}
+        ${quizNote}
+        <h2 style="margin:6px 0 10px;font-size:19px;">¡Bien hecho!</h2>
+        <p class="subtitle" style="font-size:14px;">${randomPhrase()}</p>
+        <button class="cta">Seguir aprendiendo</button>
+      </div>
+    </div>
+  `);
+  overlay.querySelector('.sheet-close').onclick = () => overlay.remove();
+  overlay.querySelector('.cta').onclick = () => overlay.remove();
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+  document.body.appendChild(overlay);
+}
+
+renderHome();
+
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  try {
+    const swCode = `
+      const CACHE = 'universo-familiar-v1';
+      self.addEventListener('install', e => {
+        e.waitUntil(caches.open(CACHE).then(c => c.add(self.registration.scope)));
+        self.skipWaiting();
+      });
+      self.addEventListener('fetch', e => {
+        e.respondWith(
+          caches.match(e.request).then(cached => cached || fetch(e.request).then(res => {
+            const clone = res.clone();
+            caches.open(CACHE).then(c => c.put(e.request, clone));
+            return res;
+          }).catch(() => cached))
+        );
+      });
+    `;
+    const blob = new Blob([swCode], { type: 'application/javascript' });
+    navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(() => {});
+  } catch (e) {}
+}
+</script>
+</body>
+</html>
