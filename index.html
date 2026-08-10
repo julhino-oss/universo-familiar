@@ -291,6 +291,9 @@ window.addEventListener('error', function(e) {
   }
 });
 </script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script>
 const TOPICS = [
   {id:"cn1",cat:"Ciencia y Naturaleza",title:"¿Por qué el cielo es azul?",body:"La luz del sol contiene todos los colores mezclados. Cuando entra en la atmósfera, choca con las moléculas de aire y el color azul se dispersa mucho más que los demás, así que lo vemos por todas partes del cielo."},
@@ -475,7 +478,7 @@ function loadProfiles() {
     return memoryFallback;
   }
 }
-function saveProfiles(p) {
+function saveProfilesLocal(p) {
   try {
     localStorage.setItem('universo-familiar-profiles', JSON.stringify(p));
   } catch(e) {
@@ -483,15 +486,23 @@ function saveProfiles(p) {
     memoryFallback = p;
   }
 }
+function saveProfiles(p) {
+  saveProfilesLocal(p);
+  scheduleCloudSync();
+}
 
 let notesFallback = {};
 function loadNotes() {
   try { return JSON.parse(localStorage.getItem('universo-familiar-notes') || '{}'); }
   catch(e) { storageBlocked = true; return notesFallback; }
 }
-function saveNotes(notes) {
+function saveNotesLocal(notes) {
   try { localStorage.setItem('universo-familiar-notes', JSON.stringify(notes)); }
   catch(e) { storageBlocked = true; notesFallback = notes; }
+}
+function saveNotes(notes) {
+  saveNotesLocal(notes);
+  scheduleCloudSync();
 }
 let notesStore = loadNotes();
 
@@ -507,6 +518,7 @@ function loadPlanetPhotos() {
 function savePlanetPhotos() {
   try { localStorage.setItem('universo-familiar-planet-photos', JSON.stringify(planetPhotoCache)); }
   catch(e) {}
+  scheduleCloudSync();
 }
 let planetPhotoCache = loadPlanetPhotos();
 let planetPhotoRequests = {};
@@ -522,7 +534,7 @@ function ensurePlanetPhoto(planetId) {
       if (href) {
         planetPhotoCache[planetId] = href;
         savePlanetPhotos();
-        if (currentProfileId) renderProfile(); else renderHome();
+        rerenderCurrentView();
       }
     })
     .catch(() => {});
@@ -530,6 +542,198 @@ function ensurePlanetPhoto(planetId) {
 
 let profiles = loadProfiles();
 let currentProfileId = null;
+
+function rerenderCurrentView() {
+  if (currentProfileId && profiles.some(pr => pr.id === currentProfileId)) renderProfile();
+  else renderHome();
+}
+
+/* ---- Cloud sync: shared family code via Firebase (Firestore + anonymous auth) ---- */
+const FIREBASE_CONFIG = {
+  apiKey: "TODO_FIREBASE_API_KEY",
+  authDomain: "TODO.firebaseapp.com",
+  projectId: "TODO",
+  storageBucket: "TODO.appspot.com",
+  messagingSenderId: "TODO",
+  appId: "TODO",
+};
+const FAMILY_CODE_KEY = 'universo-familiar-code';
+const CODE_WORDS = ["COMETA","NEBULA","GALAXIA","ORBITA","ECLIPSE","METEORO","ESTRELLA","COSMOS","PLANETA","ASTRO"];
+
+let cloudEnabled = !!(FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey.indexOf('TODO') !== 0);
+let cloudBlocked = false;
+let db = null;
+let familyCode = null;
+let familyUnsub = null;
+let syncTimer = null;
+
+function randomFamilyCode() {
+  const w = CODE_WORDS[Math.floor(Math.random()*CODE_WORDS.length)];
+  const n = Math.floor(1000 + Math.random()*9000);
+  return w + n;
+}
+function loadStoredFamilyCode() {
+  try { return localStorage.getItem(FAMILY_CODE_KEY); } catch(e) { return null; }
+}
+function storeFamilyCode(code) {
+  try { localStorage.setItem(FAMILY_CODE_KEY, code); } catch(e) {}
+}
+function clearStoredFamilyCode() {
+  try { localStorage.removeItem(FAMILY_CODE_KEY); } catch(e) {}
+}
+function familyDocRef(code) {
+  return db.collection('families').doc(code);
+}
+function scheduleCloudSync() {
+  if (!cloudEnabled || !db || !familyCode) return;
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(() => {
+    familyDocRef(familyCode).set({
+      profiles: profiles,
+      notes: notesStore,
+      planetPhotos: planetPhotoCache,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    }, { merge: true }).catch(() => { cloudBlocked = true; });
+  }, 500);
+}
+
+function startApp() {
+  if (!cloudEnabled) { renderHome(); return; }
+  try {
+    firebase.initializeApp(FIREBASE_CONFIG);
+    db = firebase.firestore();
+  } catch(e) { cloudEnabled = false; renderHome(); return; }
+
+  showLoadingScreen('Preparando tu universo...');
+  firebase.auth().signInAnonymously().catch(() => {
+    cloudEnabled = false; cloudBlocked = true; renderHome();
+  });
+  firebase.auth().onAuthStateChanged(user => {
+    if (!user) return;
+    const stored = loadStoredFamilyCode();
+    if (stored) connectToFamily(stored);
+    else renderFamilyGate();
+  });
+}
+
+function showLoadingScreen(msg) {
+  const app = document.getElementById('app');
+  app.innerHTML = '';
+  app.appendChild(el(`<div style="text-align:center;padding:80px 10px;color:var(--muted);font-size:14px;">${msg}</div>`));
+}
+
+function connectToFamily(code) {
+  familyCode = code;
+  storeFamilyCode(code);
+  showLoadingScreen('Conectando con tu familia...');
+  if (familyUnsub) familyUnsub();
+  familyUnsub = familyDocRef(code).onSnapshot(snap => {
+    cloudBlocked = false;
+    if (snap.exists) {
+      const data = snap.data() || {};
+      profiles = data.profiles || [];
+      notesStore = data.notes || {};
+      planetPhotoCache = data.planetPhotos || {};
+      saveProfilesLocal(profiles);
+      saveNotesLocal(notesStore);
+    }
+    rerenderCurrentView();
+  }, () => {
+    cloudBlocked = true;
+    rerenderCurrentView();
+  });
+}
+
+function leaveFamily() {
+  if (familyUnsub) { familyUnsub(); familyUnsub = null; }
+  clearStoredFamilyCode();
+  familyCode = null;
+  currentProfileId = null;
+  profiles = [];
+  notesStore = {};
+  renderFamilyGate();
+}
+
+function renderFamilyGate() {
+  const app = document.getElementById('app');
+  app.innerHTML = '';
+  app.appendChild(el(`
+    <div class="home-header">
+      <div class="eyebrow">Aprendizaje en familia</div>
+      <h1 class="title">Universo Familiar</h1>
+      <p class="subtitle">Usen un código familiar para que el progreso se guarde y se vea igual en todos los dispositivos.</p>
+    </div>
+  `));
+
+  const joinCard = el(`
+    <div class="sky-wrap" style="padding:20px;">
+      <div class="eyebrow">Ya tenemos código</div>
+      <input class="name-input" id="joinCodeInput" placeholder="Ej. COMETA4821" maxlength="24" style="text-transform:uppercase;" />
+      <button class="cta" id="joinBtn">Entrar</button>
+      <div id="joinError" style="color:var(--coral);font-size:12.5px;margin-top:10px;display:none;"></div>
+    </div>
+  `);
+  app.appendChild(joinCard);
+
+  app.appendChild(el(`<div style="text-align:center;color:var(--muted);font-size:12px;margin:18px 0;">— o —</div>`));
+
+  const createBtn = el(`<button class="cta" style="background:transparent;border:1px solid var(--line);color:var(--text);">✨ Crear código nuevo para mi familia</button>`);
+  app.appendChild(createBtn);
+
+  const input = joinCard.querySelector('#joinCodeInput');
+  const errorBox = joinCard.querySelector('#joinError');
+  joinCard.querySelector('#joinBtn').onclick = () => {
+    const code = input.value.trim().toUpperCase().replace(/\s+/g,'');
+    if (!code) return;
+    errorBox.style.display = 'none';
+    familyDocRef(code).get().then(snap => {
+      if (snap.exists) {
+        connectToFamily(code);
+      } else {
+        errorBox.textContent = 'No encontramos ese código. Revisa que esté bien escrito, o crea uno nuevo.';
+        errorBox.style.display = 'block';
+      }
+    }).catch(() => {
+      errorBox.textContent = 'No se pudo conectar. Revisa tu conexión a internet e intenta de nuevo.';
+      errorBox.style.display = 'block';
+    });
+  };
+
+  createBtn.onclick = () => {
+    createBtn.disabled = true;
+    tryCreateCode(0);
+  };
+
+  function tryCreateCode(attempt) {
+    if (attempt >= 6) { createBtn.disabled = false; return; }
+    const code = randomFamilyCode();
+    familyDocRef(code).get().then(snap => {
+      if (snap.exists) { tryCreateCode(attempt+1); return; }
+      familyDocRef(code).set({ profiles: [], notes: {}, planetPhotos: {}, updatedAt: firebase.firestore.FieldValue.serverTimestamp() })
+        .then(() => showNewCodeSheet(code))
+        .catch(() => { createBtn.disabled = false; });
+    }).catch(() => { createBtn.disabled = false; });
+  }
+}
+
+function showNewCodeSheet(code) {
+  const overlay = el(`
+    <div class="overlay">
+      <div class="sheet detail-card" style="text-align:center;">
+        <div style="font-size:34px;margin-bottom:10px;">🌌</div>
+        <h2 style="margin:6px 0 6px;">¡Código creado!</h2>
+        <p class="subtitle" style="margin-bottom:16px;">Compártelo con tu familia para que todos vean el mismo progreso desde cualquier dispositivo.</p>
+        <div style="font-family:'Fraunces',serif;font-size:28px;font-weight:700;letter-spacing:.04em;color:var(--gold);background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px;">${code}</div>
+        <button class="cta">Empezar</button>
+      </div>
+    </div>
+  `);
+  overlay.querySelector('.cta').onclick = () => {
+    overlay.remove();
+    connectToFamily(code);
+  };
+  document.body.appendChild(overlay);
+}
 
 function todayKey() { return new Date().toISOString().slice(0,10); }
 function yesterdayKey() { const d=new Date(); d.setDate(d.getDate()-1); return d.toISOString().slice(0,10); }
@@ -651,6 +855,25 @@ function renderHome() {
       <p class="subtitle">Cada quien tiene su propio planeta. Cada cosa nueva que aprenden le suma una luna.</p>
     </div>
   `));
+
+  if (cloudEnabled && familyCode) {
+    const codeChip = el(`
+      <div style="display:flex;align-items:center;justify-content:space-between;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 14px;margin-bottom:16px;box-shadow:0 3px 10px rgba(8,6,24,0.25);">
+        <span style="font-size:12.5px;color:var(--muted);">Código familiar: <strong style="color:var(--gold);letter-spacing:.03em;">${familyCode}</strong></span>
+        <button id="leaveFamilyBtn" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;text-decoration:underline;">Cambiar</button>
+      </div>
+    `);
+    codeChip.querySelector('#leaveFamilyBtn').onclick = () => leaveFamily();
+    app.appendChild(codeChip);
+  }
+
+  if (cloudBlocked) {
+    app.appendChild(el(`
+      <div style="background:var(--card);border:1px solid var(--coral);border-radius:14px;padding:12px 14px;margin-bottom:16px;font-size:12.5px;color:var(--muted);">
+        ⚠️ No se pudo conectar con la nube ahora mismo. Tu progreso se sigue guardando en este dispositivo y se sincronizará cuando vuelva la conexión.
+      </div>
+    `));
+  }
 
   if (storageBlocked) {
     app.appendChild(el(`
@@ -1368,7 +1591,7 @@ function showLearnedConfirmation(newBadges, quizCorrect) {
   document.body.appendChild(overlay);
 }
 
-renderHome();
+startApp();
 
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   try {
