@@ -273,6 +273,76 @@
   @media (prefers-reduced-motion: reduce) {
     .planet-halo, .planet-band, .ring-outer, .orbit-group { animation: none; }
   }
+
+  /* ---- Solar system view ---- */
+  .solar-view {
+    position: fixed; inset: 0;
+    background: #05040c;
+    overflow: hidden;
+    z-index: 20;
+    touch-action: none;
+  }
+  .solar-canvas, .solar-svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .solar-svg { touch-action: none; }
+  .solar-label {
+    position: absolute;
+    color: var(--text);
+    font-family: 'Sora', sans-serif;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    text-shadow: 0 1px 5px rgba(0,0,0,0.85);
+    white-space: nowrap;
+    pointer-events: none;
+    transform: translate(-50%, 4px);
+  }
+  .solar-moon-label {
+    position: absolute;
+    color: var(--muted);
+    font-family: 'Sora', sans-serif;
+    font-size: 9px;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.85);
+    white-space: nowrap;
+    pointer-events: none;
+    transform: translate(-50%, 2px);
+    max-width: 90px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .solar-star-label {
+    position: absolute;
+    color: var(--gold);
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    text-shadow: 0 1px 8px rgba(0,0,0,0.9);
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+  }
+  .solar-topbar {
+    position: absolute; top: 0; left: 0; right: 0;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 16px; z-index: 3;
+  }
+  .solar-btn {
+    background: rgba(36,31,76,0.85); border: 1px solid var(--line); color: var(--text);
+    font-family: 'Sora', sans-serif; font-size: 12.5px; padding: 9px 15px; border-radius: 20px;
+    cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+  }
+  .solar-btn:hover { background: rgba(46,40,97,0.9); }
+  .solar-bottombar {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(180deg, transparent, rgba(10,8,26,0.88) 35%, #0e0b24 75%);
+    padding: 26px 18px 22px;
+    z-index: 3;
+    text-align: center;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .solar-view * { transition: none !important; }
+  }
 </style>
 </head>
 <body>
@@ -542,10 +612,16 @@ function ensurePlanetPhoto(planetId) {
 
 let profiles = loadProfiles();
 let currentProfileId = null;
+let currentView = 'home'; // 'solar' | 'home' | 'profile'
 
 function rerenderCurrentView() {
-  if (currentProfileId && profiles.some(pr => pr.id === currentProfileId)) renderProfile();
-  else renderHome();
+  if (currentView === 'profile' && currentProfileId && profiles.some(pr => pr.id === currentProfileId)) {
+    renderProfile();
+  } else if (currentView === 'solar' && solarActive) {
+    syncSolarPlanets();
+  } else {
+    renderHome();
+  }
 }
 
 /* ---- Cloud sync: shared family code via Firebase (Firestore + anonymous auth) ---- */
@@ -598,7 +674,7 @@ function scheduleCloudSync() {
 }
 
 function startApp() {
-  if (!cloudEnabled) { renderHome(); return; }
+  if (!cloudEnabled) { goLanding(); return; }
   try {
     firebase.initializeApp(FIREBASE_CONFIG);
     db = firebase.firestore();
@@ -627,6 +703,7 @@ function connectToFamily(code) {
   storeFamilyCode(code);
   showLoadingScreen('Conectando con tu familia...');
   if (familyUnsub) familyUnsub();
+  hasLandedThisSession = false;
   familyUnsub = familyDocRef(code).onSnapshot(snap => {
     cloudBlocked = false;
     if (snap.exists) {
@@ -637,7 +714,8 @@ function connectToFamily(code) {
       saveProfilesLocal(profiles);
       saveNotesLocal(notesStore);
     }
-    rerenderCurrentView();
+    if (!hasLandedThisSession) { hasLandedThisSession = true; goLanding(); }
+    else rerenderCurrentView();
   }, () => {
     cloudBlocked = true;
     rerenderCurrentView();
@@ -646,11 +724,13 @@ function connectToFamily(code) {
 
 function leaveFamily() {
   if (familyUnsub) { familyUnsub(); familyUnsub = null; }
+  teardownSolarIfActive();
   clearStoredFamilyCode();
   familyCode = null;
   currentProfileId = null;
   profiles = [];
   notesStore = {};
+  hasLandedThisSession = false;
   renderFamilyGate();
 }
 
@@ -845,7 +925,387 @@ function buildPlanetAvatar(p) {
   return svg;
 }
 
+/* ---- Solar system view (Cambio 1: vista sistema familiar) ---- */
+const prefersReducedMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+let solarActive = false;
+let solarRafId = null;
+let solarPaused = false;
+let solarSelectedId = null;
+let solarClock = 0;
+let solarLastTs = null;
+let solarCam = { s: 1, tx: 0, ty: 0 };
+let solarCamTarget = { s: 1, tx: 0, ty: 0 };
+let solarPlanetsById = {};
+let solarViewportW = 0, solarViewportH = 0;
+let solarStarCtx = null;
+let solarSceneEl = null, solarLabelsEl = null, solarOrbitsSvgEl = null;
+let solarOnResize = null, solarOnVisibility = null;
+let solarMoonEls = [];
+let solarMoonsFor = null;
+let solarBottomBarFor = null;
+let hasLandedThisSession = false;
+
+function goLanding() {
+  if (profiles.length > 0) renderSolarSystem();
+  else renderHome();
+}
+
+function teardownSolarIfActive() {
+  if (!solarActive) return;
+  solarActive = false;
+  if (solarRafId) cancelAnimationFrame(solarRafId);
+  solarRafId = null;
+  if (solarOnResize) window.removeEventListener('resize', solarOnResize);
+  if (solarOnVisibility) document.removeEventListener('visibilitychange', solarOnVisibility);
+  solarOnResize = null; solarOnVisibility = null;
+  solarPlanetsById = {};
+  solarSelectedId = null;
+  solarMoonEls = [];
+  solarMoonsFor = null;
+  solarBottomBarFor = null;
+  solarLastTs = null;
+}
+
+function orbitParamsFor(profileId, index) {
+  const h1 = hash(profileId+"-a"), h2 = hash(profileId+"-b"), h3 = hash(profileId+"-r"), h4 = hash(profileId+"-o"), h5 = hash(profileId+"-p");
+  const a = 130 + index*68 + (h1 % 30);
+  const b = a * (0.5 + (h2 % 20)/100);
+  const rot = ((h3 % 360) * Math.PI/180) * 0.35;
+  const angleOffset = (h4 % 360) * Math.PI/180;
+  const period = 34 + (a/160)*26 + (h5 % 10);
+  return { a, b, rot, angleOffset, period };
+}
+
+function planetPositionAt(orb, t) {
+  const angle = orb.angleOffset + (prefersReducedMotion ? 0 : (t / orb.period) * Math.PI * 2);
+  const x0 = Math.cos(angle) * orb.a;
+  const y0 = Math.sin(angle) * orb.b;
+  const cosR = Math.cos(orb.rot), sinR = Math.sin(orb.rot);
+  return {
+    x: 500 + x0*cosR - y0*sinR,
+    y: 500 + x0*sinR + y0*cosR,
+  };
+}
+
+function syncSolarPlanets() {
+  if (!solarSceneEl) return;
+  const seen = {};
+  profiles.forEach((rawP, i) => {
+    const p = ensureProfileDefaults(rawP);
+    if (p.realPlanetId) ensurePlanetPhoto(p.realPlanetId);
+    seen[p.id] = true;
+    let entry = solarPlanetsById[p.id];
+    if (!entry) {
+      const orb = orbitParamsFor(p.id, i);
+      const wrap = document.createElement('div');
+      wrap.style.cssText = 'position:absolute;left:0;top:0;width:64px;height:64px;cursor:pointer;';
+      solarSceneEl.appendChild(wrap);
+      const label = document.createElement('div');
+      label.className = 'solar-label';
+      solarLabelsEl.appendChild(label);
+      const connector = document.createElement('div');
+      connector.style.cssText = 'position:absolute;width:1px;height:8px;background:var(--muted);opacity:0.55;pointer-events:none;';
+      solarLabelsEl.appendChild(connector);
+      entry = { orb, wrap, label, connector, p };
+      solarPlanetsById[p.id] = entry;
+      wrap.onclick = (e) => { e.stopPropagation(); solarSelectedId = p.id; };
+    }
+    entry.p = p;
+    entry.wrap.innerHTML = '';
+    const svg = buildPlanetAvatar(p);
+    svg.style.width = '100%'; svg.style.height = '100%';
+    entry.wrap.appendChild(svg);
+    entry.label.textContent = p.name;
+  });
+  Object.keys(solarPlanetsById).forEach(id => {
+    if (!seen[id]) {
+      solarPlanetsById[id].wrap.remove();
+      solarPlanetsById[id].label.remove();
+      solarPlanetsById[id].connector.remove();
+      delete solarPlanetsById[id];
+      if (solarSelectedId === id) solarSelectedId = null;
+    }
+  });
+  if (solarOrbitsSvgEl) drawSolarOrbits(solarOrbitsSvgEl);
+}
+
+function paintSolarStars() {
+  if (!solarStarCtx) return;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const w = solarViewportW, h = solarViewportH;
+  const canvas = solarStarCtx.canvas;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  canvas.style.width = w + 'px';
+  canvas.style.height = h + 'px';
+  solarStarCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  solarStarCtx.clearRect(0, 0, w, h);
+  const n = Math.round((w*h)/3400);
+  for (let i=0;i<n;i++) {
+    const x = Math.random()*w, y = Math.random()*h;
+    const r = Math.random()*1.3 + 0.3;
+    solarStarCtx.beginPath();
+    solarStarCtx.arc(x, y, r, 0, Math.PI*2);
+    solarStarCtx.fillStyle = 'rgba(255,255,255,'+(0.35+Math.random()*0.5).toFixed(2)+')';
+    solarStarCtx.fill();
+  }
+}
+
+function drawSolarOrbits(svgEl) {
+  svgEl.innerHTML = '';
+  const ns = "http://www.w3.org/2000/svg";
+  Object.values(solarPlanetsById).forEach(entry => {
+    const orbitEl = document.createElementNS(ns, 'ellipse');
+    orbitEl.setAttribute('cx', 500); orbitEl.setAttribute('cy', 500);
+    orbitEl.setAttribute('rx', entry.orb.a); orbitEl.setAttribute('ry', entry.orb.b);
+    orbitEl.setAttribute('fill', 'none');
+    orbitEl.setAttribute('stroke', entry.p.color);
+    orbitEl.setAttribute('stroke-opacity', '0.3');
+    orbitEl.setAttribute('stroke-width', '1.4');
+    orbitEl.setAttribute('transform', `rotate(${entry.orb.rot*180/Math.PI} 500 500)`);
+    svgEl.appendChild(orbitEl);
+  });
+}
+
+function updateSolarCameraTarget() {
+  const fitScale = Math.min(solarViewportW, solarViewportH) / 1150;
+  if (solarSelectedId && solarPlanetsById[solarSelectedId]) {
+    const entry = solarPlanetsById[solarSelectedId];
+    const pos = planetPositionAt(entry.orb, solarClock);
+    const zoomScale = Math.max(fitScale * 7, 2.4);
+    solarCamTarget.s = zoomScale;
+    solarCamTarget.tx = solarViewportW/2 - pos.x*zoomScale;
+    solarCamTarget.ty = solarViewportH/2 - pos.y*zoomScale;
+  } else {
+    solarCamTarget.s = fitScale;
+    solarCamTarget.tx = solarViewportW/2 - 500*fitScale;
+    solarCamTarget.ty = solarViewportH/2 - 500*fitScale;
+  }
+}
+
+function renderSolarBottomBar() {
+  const bar = document.getElementById('solarBottomBar');
+  if (!bar) return;
+  if (!solarSelectedId || !solarPlanetsById[solarSelectedId]) {
+    bar.style.display = 'none';
+    solarBottomBarFor = null;
+    return;
+  }
+  bar.style.display = 'block';
+  if (solarBottomBarFor === solarSelectedId) return;
+  const entry = solarPlanetsById[solarSelectedId];
+  const p = entry.p;
+  const learnedCount = (p.unlocked||[]).length;
+  bar.innerHTML = '';
+  bar.appendChild(el(`
+    <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:8px;">
+      <h2 style="font-size:19px;">${p.name}</h2>
+      <span style="color:var(--muted);font-size:13px;">🌙 ${learnedCount}</span>
+    </div>
+  `));
+  const learned = (p.unlocked||[]).map(id => TOPICS.find(t=>t.id===id)).filter(Boolean);
+  const chipsWrap = el(`<div style="display:flex;gap:8px;overflow-x:auto;padding:4px 2px 6px;justify-content:${learned.length?'flex-start':'center'};"></div>`);
+  if (learned.length === 0) {
+    chipsWrap.appendChild(el(`<div style="color:var(--muted);font-size:12.5px;">Aún sin lunas</div>`));
+  } else {
+    learned.forEach(t => {
+      chipsWrap.appendChild(el(`<div style="flex:0 0 auto;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:6px 12px;font-size:11.5px;white-space:nowrap;box-shadow:0 3px 8px rgba(0,0,0,0.3);">${t.title}</div>`));
+    });
+  }
+  bar.appendChild(chipsWrap);
+  const actions = el(`<div style="display:flex;gap:10px;justify-content:center;margin-top:8px;"></div>`);
+  const openBtn = el(`<button class="solar-btn">Ver perfil completo →</button>`);
+  openBtn.onclick = () => { currentProfileId = p.id; renderProfile(); };
+  actions.appendChild(openBtn);
+  bar.appendChild(actions);
+  solarBottomBarFor = solarSelectedId;
+}
+
+function renderSolarMoons() {
+  const container = document.getElementById('solarMoonsLayer');
+  if (!container) return;
+  if (!solarSelectedId || !solarPlanetsById[solarSelectedId]) {
+    if (solarMoonEls.length) { solarMoonEls.forEach(m=>{ m.wrap.remove(); m.label.remove(); }); solarMoonEls = []; }
+    solarMoonsFor = null;
+    return;
+  }
+  const entry = solarPlanetsById[solarSelectedId];
+  const p = entry.p;
+  const learned = (p.unlocked || []).map(id => TOPICS.find(t=>t.id===id)).filter(Boolean);
+  const pos = planetPositionAt(entry.orb, solarClock);
+  const screenX = solarCam.tx + pos.x*solarCam.s;
+  const screenY = solarCam.ty + pos.y*solarCam.s;
+
+  if (solarMoonsFor !== solarSelectedId || solarMoonEls.length !== learned.length) {
+    solarMoonEls.forEach(m=>{ m.wrap.remove(); m.label.remove(); });
+    solarMoonEls = learned.map(() => {
+      const wrap = document.createElement('div');
+      wrap.style.cssText = 'position:absolute;width:10px;height:10px;border-radius:50%;pointer-events:none;';
+      const label = document.createElement('div');
+      label.className = 'solar-moon-label';
+      container.appendChild(wrap);
+      container.appendChild(label);
+      return { wrap, label };
+    });
+    solarMoonsFor = solarSelectedId;
+  }
+
+  const radius = 78;
+  learned.forEach((topic, i) => {
+    const angle = (i/Math.max(learned.length,1)) * Math.PI*2 + solarClock*(prefersReducedMotion?0:0.4);
+    const mx = screenX + Math.cos(angle)*radius;
+    const my = screenY + Math.sin(angle)*radius*0.6;
+    const m = solarMoonEls[i];
+    m.wrap.style.left = (mx-5)+'px'; m.wrap.style.top = (my-5)+'px';
+    m.wrap.style.background = p.color;
+    m.wrap.style.boxShadow = `0 0 8px ${p.color}`;
+    m.label.style.left = mx+'px'; m.label.style.top = (my+8)+'px';
+    m.label.textContent = topic.title;
+  });
+}
+
+function solarFrame(ts) {
+  if (!solarActive) return;
+  if (solarLastTs == null) solarLastTs = ts;
+  const dt = Math.min((ts - solarLastTs)/1000, 0.1);
+  solarLastTs = ts;
+  if (!solarPaused) solarClock += dt;
+
+  updateSolarCameraTarget();
+  const lerp = prefersReducedMotion ? 1 : 0.1;
+  solarCam.s += (solarCamTarget.s - solarCam.s) * lerp;
+  solarCam.tx += (solarCamTarget.tx - solarCam.tx) * lerp;
+  solarCam.ty += (solarCamTarget.ty - solarCam.ty) * lerp;
+
+  solarSceneEl.style.transform = `translate(${solarCam.tx}px, ${solarCam.ty}px) scale(${solarCam.s})`;
+
+  const showLabels = !solarSelectedId;
+  Object.values(solarPlanetsById).forEach(entry => {
+    const pos = planetPositionAt(entry.orb, solarClock);
+    entry.wrap.style.transform = `translate(${pos.x - 32}px, ${pos.y - 32}px)`;
+    const screenX = solarCam.tx + pos.x*solarCam.s;
+    const screenY = solarCam.ty + pos.y*solarCam.s;
+    const apparentR = 32*solarCam.s;
+    entry.label.style.display = showLabels ? 'block' : 'none';
+    entry.connector.style.display = showLabels ? 'block' : 'none';
+    if (showLabels) {
+      entry.label.style.left = screenX + 'px';
+      entry.label.style.top = (screenY + apparentR + 8) + 'px';
+      entry.connector.style.left = (screenX - 0.5) + 'px';
+      entry.connector.style.top = (screenY + apparentR) + 'px';
+    }
+  });
+
+  renderSolarBottomBar();
+  renderSolarMoons();
+
+  solarRafId = requestAnimationFrame(solarFrame);
+}
+
+function renderSolarSystem() {
+  teardownSolarIfActive();
+  currentView = 'solar';
+  const app = document.getElementById('app');
+  app.innerHTML = '';
+
+  const view = document.createElement('div');
+  view.className = 'solar-view';
+  app.appendChild(view);
+
+  const starCanvas = document.createElement('canvas');
+  starCanvas.className = 'solar-canvas';
+  view.appendChild(starCanvas);
+  solarStarCtx = starCanvas.getContext('2d');
+
+  const sceneWrap = document.createElement('div');
+  sceneWrap.style.cssText = 'position:absolute;left:0;top:0;width:1px;height:1px;transform-origin:0 0;';
+  view.appendChild(sceneWrap);
+  solarSceneEl = sceneWrap;
+
+  const orbitsSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  orbitsSvg.setAttribute('width', '1000'); orbitsSvg.setAttribute('height', '1000');
+  orbitsSvg.style.cssText = 'position:absolute;left:0;top:0;overflow:visible;';
+  sceneWrap.appendChild(orbitsSvg);
+  solarOrbitsSvgEl = orbitsSvg;
+
+  const starEl = document.createElement('div');
+  starEl.style.cssText = 'position:absolute;left:470px;top:470px;width:60px;height:60px;border-radius:50%;background:radial-gradient(circle at 35% 32%, #fff, var(--gold) 45%, #b8791f 100%);box-shadow:0 0 60px 18px rgba(244,183,64,0.55);';
+  sceneWrap.appendChild(starEl);
+
+  const labelsLayer = document.createElement('div');
+  labelsLayer.style.cssText = 'position:absolute;inset:0;pointer-events:none;';
+  view.appendChild(labelsLayer);
+  solarLabelsEl = labelsLayer;
+
+  const starLabel = document.createElement('div');
+  starLabel.className = 'solar-star-label';
+  starLabel.textContent = 'Familia';
+  view.appendChild(starLabel);
+
+  const moonsLayer = document.createElement('div');
+  moonsLayer.id = 'solarMoonsLayer';
+  moonsLayer.style.cssText = 'position:absolute;inset:0;pointer-events:none;';
+  view.appendChild(moonsLayer);
+
+  const topbar = document.createElement('div');
+  topbar.className = 'solar-topbar';
+  const pauseBtn = el(`<button class="solar-btn">⏸ Pausar</button>`);
+  pauseBtn.onclick = () => {
+    solarPaused = !solarPaused;
+    pauseBtn.textContent = solarPaused ? '▶ Seguir' : '⏸ Pausar';
+  };
+  const skipBtn = el(`<button class="solar-btn">Ver lista clásica →</button>`);
+  skipBtn.onclick = () => { renderHome(); };
+  topbar.appendChild(pauseBtn);
+  topbar.appendChild(skipBtn);
+  view.appendChild(topbar);
+
+  const bottomBar = document.createElement('div');
+  bottomBar.id = 'solarBottomBar';
+  bottomBar.className = 'solar-bottombar';
+  bottomBar.style.display = 'none';
+  view.appendChild(bottomBar);
+
+  view.addEventListener('click', (e) => {
+    if (e.target === view || e.target === starCanvas || e.target === starEl) {
+      solarSelectedId = null;
+    }
+  });
+
+  syncSolarPlanets();
+  drawSolarOrbits(orbitsSvg);
+
+  const resize = () => {
+    solarViewportW = window.innerWidth;
+    solarViewportH = window.innerHeight;
+    paintSolarStars();
+    const starPos = { x: solarViewportW/2, y: solarViewportH/2 };
+    starLabel.style.left = starPos.x + 'px';
+    starLabel.style.top = (starPos.y - 46) + 'px';
+  };
+  resize();
+  solarOnResize = resize;
+  window.addEventListener('resize', solarOnResize);
+
+  const onVis = () => {
+    if (document.hidden) {
+      if (solarRafId) cancelAnimationFrame(solarRafId);
+      solarRafId = null;
+    } else if (solarActive && !solarRafId) {
+      solarLastTs = null;
+      solarRafId = requestAnimationFrame(solarFrame);
+    }
+  };
+  solarOnVisibility = onVis;
+  document.addEventListener('visibilitychange', solarOnVisibility);
+
+  solarActive = true;
+  solarRafId = requestAnimationFrame(solarFrame);
+}
+
 function renderHome() {
+  teardownSolarIfActive();
+  currentView = 'home';
   const app = document.getElementById('app');
   app.innerHTML = '';
   app.appendChild(el(`
@@ -913,6 +1373,10 @@ function renderHome() {
     const progressBtn = el(`<button class="cta" style="background:transparent;border:1px solid var(--line);color:var(--text);">📊 Ver progreso familiar</button>`);
     progressBtn.onclick = () => showFamilyProgressSheet();
     app.appendChild(progressBtn);
+
+    const solarBtn = el(`<button class="cta" style="background:transparent;border:1px solid var(--line);color:var(--text);margin-top:10px;">🪐 Ver sistema solar</button>`);
+    solarBtn.onclick = () => renderSolarSystem();
+    app.appendChild(solarBtn);
   }
 }
 
@@ -984,6 +1448,8 @@ function getProfile() {
 }
 
 function renderProfile() {
+  teardownSolarIfActive();
+  currentView = 'profile';
   const p = getProfile();
   const app = document.getElementById('app');
   app.innerHTML = '';
