@@ -1508,6 +1508,9 @@ function getProfile() {
 function renderProfile() {
   teardownSolarIfActive();
   currentView = 'profile';
+  if (!history.state || history.state.view !== 'profile') {
+    try { history.pushState({ view: 'profile' }, '', ''); } catch(e) {}
+  }
   const p = getProfile();
   const app = document.getElementById('app');
   app.innerHTML = '';
@@ -1518,7 +1521,10 @@ function renderProfile() {
       <div class="streak-chip">🔥 ${p.streak} día${p.streak===1?'':'s'}</div>
     </div>
   `);
-  top.querySelector('.back-btn').onclick = () => renderSolarSystem();
+  top.querySelector('.back-btn').onclick = () => {
+    if (history.state && history.state.view === 'profile') history.back();
+    else renderSolarSystem();
+  };
   app.appendChild(top);
 
   if (p.realPlanetId) ensurePlanetPhoto(p.realPlanetId);
@@ -2007,6 +2013,10 @@ function showLearnedConfirmation(newBadges, quizCorrect) {
   document.body.appendChild(overlay);
 }
 
+window.addEventListener('popstate', () => {
+  if (currentView === 'profile') renderSolarSystem();
+});
+
 startApp();
 
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
@@ -2033,6 +2043,12 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
     `;
     const blob = new Blob([swCode], { type: 'application/javascript' });
     navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(() => {});
+    let swReloaded = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (swReloaded) return;
+      swReloaded = true;
+      location.reload();
+    });
   } catch (e) {}
 }
 </script>
