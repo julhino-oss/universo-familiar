@@ -233,13 +233,13 @@
   /* ---- Planet animation ---- */
   .planet-halo { animation: pulse-glow 4s ease-in-out infinite; transform-origin: 200px 130px; }
   .planet-band { animation: band-shift 26s linear infinite; transform-origin: 200px 130px; }
-  .ring-outer { animation: band-shift 60s linear infinite reverse; transform-origin: 200px 130px; }
+  .planet-clouds { animation: band-shift 46s linear infinite reverse; transform-origin: 200px 130px; }
   .orbit-group { animation: orbit-spin 42s linear infinite; transform-origin: 200px 130px; }
   @keyframes pulse-glow { 0%,100% { opacity: .22; } 50% { opacity: .48; } }
   @keyframes band-shift { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
   @keyframes orbit-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
   @media (prefers-reduced-motion: reduce) {
-    .planet-halo, .planet-band, .ring-outer, .orbit-group { animation: none; }
+    .planet-halo, .planet-band, .planet-clouds, .orbit-group { animation: none; }
   }
 
   /* ---- Solar system view ---- */
@@ -455,6 +455,8 @@ const REAL_PLANETS = [
   { id:"saturno", label:"Saturno", color:"#e3c88f", style:"bands", ring:true },
   { id:"urano", label:"Urano", color:"#7fd4d9", style:"crystal", ring:false },
   { id:"neptuno", label:"Neptuno", color:"#3457d5", style:"crystal", ring:false },
+  { id:"luna", label:"Luna", color:"#b8b6ad", style:"rocky", ring:false },
+  { id:"pluton", label:"Plutón", color:"#c9ab8c", style:"rocky", ring:false },
 ];
 
 function catSlug(cat) { return cat.toLowerCase().replace(/[^a-záéíóúñ]+/gi,'-'); }
@@ -545,9 +547,10 @@ function saveNotes(notes) {
 let notesStore = loadNotes();
 
 const NASA_QUERIES = {
-  mercurio: "Mercury planet", venus: "Venus planet", tierra: "Earth planet",
-  marte: "Mars planet", jupiter: "Jupiter planet", saturno: "Saturn planet",
-  urano: "Uranus planet", neptuno: "Neptune planet",
+  mercurio: "Mercury planet global view", venus: "Venus planet global view", tierra: "Earth planet full disk",
+  marte: "Mars planet global view", jupiter: "Jupiter planet global view", saturno: "Saturn planet rings",
+  urano: "Uranus planet Voyager", neptuno: "Neptune planet Voyager",
+  luna: "Full Moon", pluton: "Pluto New Horizons global",
 };
 function loadPlanetPhotos() {
   try { return JSON.parse(localStorage.getItem('universo-familiar-planet-photos') || '{}'); }
@@ -792,18 +795,51 @@ function el(html) {
   return t.content.firstElementChild;
 }
 
-function buildPlanetAvatar(p) {
+/* ---- Shared realistic planet rendering (used by avatars, the big profile scene, and the solar view) ---- */
+function appendRingPair(container, cx, cy, rx, ry, rotDeg, color, opacity, strokeWidth) {
   const ns = "http://www.w3.org/2000/svg";
-  const svg = document.createElementNS(ns,"svg");
-  svg.setAttribute("viewBox","0 0 100 100");
-  svg.style.display = "block";
-  const cx = 50, cy = 50, r = 38;
-  const usePhoto = !!(p.realPlanetId && planetPhotoCache[p.realPlanetId]);
+  const bands = [
+    { rx, ry, op: opacity, w: strokeWidth },
+    { rx: rx*0.86, ry: ry*0.86, op: opacity*0.65, w: strokeWidth*0.65 },
+  ];
+  const fronts = [];
+  bands.forEach(b => {
+    const back = document.createElementNS(ns,"ellipse");
+    back.setAttribute("cx",cx); back.setAttribute("cy",cy);
+    back.setAttribute("rx",b.rx); back.setAttribute("ry",b.ry);
+    back.setAttribute("fill","none"); back.setAttribute("stroke",color);
+    back.setAttribute("stroke-opacity", b.op); back.setAttribute("stroke-width", b.w);
+    back.setAttribute("transform", `rotate(${rotDeg} ${cx} ${cy})`);
+    container.appendChild(back);
 
-  const defs = document.createElementNS(ns,"defs");
+    const front = document.createElementNS(ns,"path");
+    front.setAttribute("d", `M ${cx+b.rx} ${cy} A ${b.rx} ${b.ry} 0 0 1 ${cx-b.rx} ${cy}`);
+    front.setAttribute("fill","none"); front.setAttribute("stroke",color);
+    front.setAttribute("stroke-opacity", Math.min(b.op*1.4, 0.9)); front.setAttribute("stroke-width", b.w);
+    front.setAttribute("transform", `rotate(${rotDeg} ${cx} ${cy})`);
+    fronts.push(front);
+  });
+  return fronts; // caller appends these AFTER the planet disk so the ring wraps in front too
+}
+
+function paintPlanetDisk(container, defs, p, cx, cy, r, idPrefix, animated) {
+  const ns = "http://www.w3.org/2000/svg";
+  const usePhoto = !!(p.realPlanetId && planetPhotoCache[p.realPlanetId]);
+  const style = p.style || "bands";
+
+  const glowId = idPrefix+"-atmo-"+p.id;
+  const glow = document.createElementNS(ns,"radialGradient");
+  glow.setAttribute("id", glowId);
+  glow.innerHTML = `<stop offset="55%" stop-color="${p.color}" stop-opacity="0"/><stop offset="82%" stop-color="${p.color}" stop-opacity="0.3"/><stop offset="100%" stop-color="${p.color}" stop-opacity="0"/>`;
+  defs.appendChild(glow);
+  const atmo = document.createElementNS(ns,"circle");
+  atmo.setAttribute("cx",cx); atmo.setAttribute("cy",cy); atmo.setAttribute("r", r*1.3);
+  atmo.setAttribute("fill", `url(#${glowId})`);
+  container.appendChild(atmo);
+
   let fillRef;
   if (usePhoto) {
-    const patId = "avpat-"+p.id;
+    const patId = idPrefix+"-photo-"+p.id;
     const pattern = document.createElementNS(ns,"pattern");
     pattern.setAttribute("id", patId);
     pattern.setAttribute("patternUnits","objectBoundingBox");
@@ -818,77 +854,145 @@ function buildPlanetAvatar(p) {
     defs.appendChild(pattern);
     fillRef = `url(#${patId})`;
   } else {
-    const gradId = "avgrad-"+p.id;
+    const gradId = idPrefix+"-grad-"+p.id;
     const grad = document.createElementNS(ns,"radialGradient");
     grad.setAttribute("id", gradId);
-    grad.setAttribute("cx","35%"); grad.setAttribute("cy","32%"); grad.setAttribute("r","75%");
-    grad.innerHTML = `<stop offset="0%" stop-color="#fff" stop-opacity="0.85"/><stop offset="35%" stop-color="${p.color}"/><stop offset="100%" stop-color="#241f4c"/>`;
+    grad.setAttribute("cx","33%"); grad.setAttribute("cy","30%"); grad.setAttribute("r","78%");
+    grad.innerHTML = `<stop offset="0%" stop-color="#fff" stop-opacity="0.9"/><stop offset="30%" stop-color="${p.color}"/><stop offset="100%" stop-color="#1c1846"/>`;
     defs.appendChild(grad);
     fillRef = `url(#${gradId})`;
   }
-  const shadeId = "avshade-"+p.id;
-  const shadeGrad = document.createElementNS(ns,"radialGradient");
-  shadeGrad.setAttribute("id", shadeId);
-  shadeGrad.setAttribute("cx","72%"); shadeGrad.setAttribute("cy","75%"); shadeGrad.setAttribute("r","65%");
-  shadeGrad.innerHTML = `<stop offset="0%" stop-color="#000" stop-opacity="0.5"/><stop offset="70%" stop-color="#000" stop-opacity="0.08"/><stop offset="100%" stop-color="#000" stop-opacity="0"/>`;
-  defs.appendChild(shadeGrad);
-  svg.appendChild(defs);
-
-  const learnedCount = (p.unlocked || []).length;
-  if (p.forceRing || learnedCount >= 10) {
-    const ring = document.createElementNS(ns,"ellipse");
-    ring.setAttribute("cx",cx); ring.setAttribute("cy",cy);
-    ring.setAttribute("rx", r+13); ring.setAttribute("ry", (r+13)*0.28);
-    ring.setAttribute("fill","none"); ring.setAttribute("stroke", p.color);
-    ring.setAttribute("stroke-opacity","0.5"); ring.setAttribute("stroke-width","2.5");
-    svg.appendChild(ring);
-  }
-
   const planet = document.createElementNS(ns,"circle");
   planet.setAttribute("cx",cx); planet.setAttribute("cy",cy); planet.setAttribute("r",r);
   planet.setAttribute("fill", fillRef);
-  svg.appendChild(planet);
+  container.appendChild(planet);
+
+  const clipId = idPrefix+"-clip-"+p.id;
+  const clip = document.createElementNS(ns,"clipPath");
+  clip.setAttribute("id", clipId);
+  const clipCircle = document.createElementNS(ns,"circle");
+  clipCircle.setAttribute("cx",cx); clipCircle.setAttribute("cy",cy); clipCircle.setAttribute("r",r);
+  clip.appendChild(clipCircle);
+  defs.appendChild(clip);
 
   if (!usePhoto) {
-    const style = p.style || "bands";
+    const texGroup = document.createElementNS(ns,"g");
+    texGroup.setAttribute("clip-path", `url(#${clipId})`);
+    if (animated) texGroup.setAttribute("class", style === "lava" ? "planet-halo" : "planet-band");
     if (style === "bands") {
-      const band = document.createElementNS(ns,"ellipse");
-      band.setAttribute("cx",cx); band.setAttribute("cy",cy-5); band.setAttribute("rx", r); band.setAttribute("ry", r*0.22);
-      band.setAttribute("fill","#fff"); band.setAttribute("opacity","0.10");
-      svg.appendChild(band);
-    } else if (style === "rocky") {
-      [[-10,-8,3],[9,5,2.4],[-4,11,2]].forEach(([dx,dy,cr]) => {
-        const c = document.createElementNS(ns,"circle");
-        c.setAttribute("cx",cx+dx); c.setAttribute("cy",cy+dy); c.setAttribute("r",cr);
-        c.setAttribute("fill","#000"); c.setAttribute("opacity","0.15");
-        svg.appendChild(c);
+      [0,1,2].forEach(i => {
+        const band = document.createElementNS(ns,"ellipse");
+        band.setAttribute("cx", cx + (i-1)*r*0.45); band.setAttribute("cy", cy - r*0.22 + i*r*0.32);
+        band.setAttribute("rx", r*1.15); band.setAttribute("ry", r*0.22);
+        band.setAttribute("fill","#fff"); band.setAttribute("opacity", 0.06 + i*0.03);
+        texGroup.appendChild(band);
       });
+    } else if (style === "rocky") {
+      const craterCount = animated ? 16 : 10;
+      for (let i=0;i<craterCount;i++) {
+        const h1 = hash("rock"+p.id+i), h2 = hash("rockY"+p.id+i);
+        const rx = cx - r + (h1 % Math.round(r*2)), ry = cy - r + (h2 % Math.round(r*2));
+        const crater = document.createElementNS(ns,"circle");
+        crater.setAttribute("cx",rx); crater.setAttribute("cy",ry); crater.setAttribute("r", 2 + (h1%4));
+        crater.setAttribute("fill","#000"); crater.setAttribute("opacity", 0.1 + (h2%10)/100);
+        texGroup.appendChild(crater);
+      }
     } else if (style === "crystal") {
-      for (let i=0;i<5;i++) {
-        const angle = (i/5)*Math.PI*2;
+      const lineCount = animated ? 9 : 6;
+      for (let i=0;i<lineCount;i++) {
+        const angle = (i / lineCount) * Math.PI * 2;
         const line = document.createElementNS(ns,"line");
         line.setAttribute("x1",cx); line.setAttribute("y1",cy);
-        line.setAttribute("x2", cx+Math.cos(angle)*r); line.setAttribute("y2", cy+Math.sin(angle)*r);
-        line.setAttribute("stroke","#fff"); line.setAttribute("stroke-width","1"); line.setAttribute("opacity","0.2");
-        svg.appendChild(line);
+        line.setAttribute("x2", cx + Math.cos(angle)*r); line.setAttribute("y2", cy + Math.sin(angle)*r);
+        line.setAttribute("stroke","#fff"); line.setAttribute("stroke-width","1"); line.setAttribute("opacity","0.22");
+        texGroup.appendChild(line);
       }
     } else if (style === "lava") {
-      const blob = document.createElementNS(ns,"ellipse");
-      blob.setAttribute("cx",cx); blob.setAttribute("cy",cy); blob.setAttribute("rx", r*0.55); blob.setAttribute("ry", r*0.32);
-      blob.setAttribute("fill","#fff2c2"); blob.setAttribute("opacity","0.18");
-      svg.appendChild(blob);
+      [0,1,2].forEach(i => {
+        const blob = document.createElementNS(ns,"ellipse");
+        blob.setAttribute("cx", cx + (i-1)*r*0.36); blob.setAttribute("cy", cy + (i-1)*r*0.22);
+        blob.setAttribute("rx", r*0.6); blob.setAttribute("ry", r*0.32);
+        blob.setAttribute("fill","#fff2c2"); blob.setAttribute("opacity", 0.12 + i*0.05);
+        texGroup.appendChild(blob);
+      });
     }
+    container.appendChild(texGroup);
   }
 
+  const showClouds = usePhoto || style === "bands";
+  if (showClouds) {
+    const cloudGroup = document.createElementNS(ns,"g");
+    cloudGroup.setAttribute("clip-path", `url(#${clipId})`);
+    if (animated) cloudGroup.setAttribute("class","planet-clouds");
+    const ch1 = hash("cloud"+p.id), ch2 = hash("cloudB"+p.id);
+    [0,1,2].forEach(i => {
+      const wx = cx - r*0.6 + ((ch1+i*137) % Math.round(r*1.8));
+      const wy = cy - r*0.6 + ((ch2+i*211) % Math.round(r*1.8));
+      const wisp = document.createElementNS(ns,"ellipse");
+      wisp.setAttribute("cx", wx); wisp.setAttribute("cy", wy);
+      wisp.setAttribute("rx", r*0.42); wisp.setAttribute("ry", r*0.16);
+      wisp.setAttribute("fill","#fff"); wisp.setAttribute("opacity","0.16");
+      wisp.setAttribute("transform", `rotate(${(i*37)%360} ${wx} ${wy})`);
+      cloudGroup.appendChild(wisp);
+    });
+    container.appendChild(cloudGroup);
+  }
+
+  const shadeId = idPrefix+"-shade-"+p.id;
+  const shadeGrad = document.createElementNS(ns,"radialGradient");
+  shadeGrad.setAttribute("id", shadeId);
+  shadeGrad.setAttribute("cx","72%"); shadeGrad.setAttribute("cy","75%"); shadeGrad.setAttribute("r","68%");
+  shadeGrad.innerHTML = `<stop offset="0%" stop-color="#000" stop-opacity="0.58"/><stop offset="65%" stop-color="#000" stop-opacity="0.1"/><stop offset="100%" stop-color="#000" stop-opacity="0"/>`;
+  defs.appendChild(shadeGrad);
   const shade = document.createElementNS(ns,"circle");
   shade.setAttribute("cx",cx); shade.setAttribute("cy",cy); shade.setAttribute("r",r);
   shade.setAttribute("fill", `url(#${shadeId})`);
-  svg.appendChild(shade);
+  container.appendChild(shade);
 
+  const specId = idPrefix+"-spec-"+p.id;
+  const specGrad = document.createElementNS(ns,"radialGradient");
+  specGrad.setAttribute("id", specId);
+  specGrad.innerHTML = `<stop offset="0%" stop-color="#fff" stop-opacity="0.55"/><stop offset="100%" stop-color="#fff" stop-opacity="0"/>`;
+  defs.appendChild(specGrad);
+  const spec = document.createElementNS(ns,"ellipse");
+  const specCx = cx - r*0.32, specCy = cy - r*0.34;
+  spec.setAttribute("cx", specCx); spec.setAttribute("cy", specCy);
+  spec.setAttribute("rx", r*0.28); spec.setAttribute("ry", r*0.18);
+  spec.setAttribute("fill", `url(#${specId})`);
+  spec.setAttribute("transform", `rotate(-28 ${specCx} ${specCy})`);
+  spec.style.mixBlendMode = "screen";
+  container.appendChild(spec);
+
+  const rimGlow = document.createElementNS(ns,"circle");
+  rimGlow.setAttribute("cx",cx); rimGlow.setAttribute("cy",cy); rimGlow.setAttribute("r", r + r*0.05);
+  rimGlow.setAttribute("fill","none"); rimGlow.setAttribute("stroke", p.color);
+  rimGlow.setAttribute("stroke-opacity","0.25"); rimGlow.setAttribute("stroke-width", Math.max(2, r*0.05));
+  container.appendChild(rimGlow);
   const rim = document.createElementNS(ns,"circle");
   rim.setAttribute("cx",cx); rim.setAttribute("cy",cy); rim.setAttribute("r",r+0.5);
-  rim.setAttribute("fill","none"); rim.setAttribute("stroke", p.color); rim.setAttribute("stroke-opacity","0.5"); rim.setAttribute("stroke-width","1");
-  svg.appendChild(rim);
+  rim.setAttribute("fill","none"); rim.setAttribute("stroke", p.color); rim.setAttribute("stroke-opacity","0.55"); rim.setAttribute("stroke-width","1");
+  container.appendChild(rim);
+}
+
+function buildPlanetAvatar(p) {
+  const ns = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(ns,"svg");
+  svg.setAttribute("viewBox","0 0 100 100");
+  svg.style.display = "block";
+  const cx = 50, cy = 50, r = 36;
+  const defs = document.createElementNS(ns,"defs");
+  svg.appendChild(defs);
+
+  const learnedCount = (p.unlocked || []).length;
+  let ringFronts = [];
+  if (p.forceRing || learnedCount >= 10) {
+    const rotDeg = (hash("ringrot"+p.id) % 40) - 20;
+    ringFronts = appendRingPair(svg, cx, cy, r+13, (r+13)*0.28, rotDeg, p.color, 0.5, 2.4);
+  }
+
+  paintPlanetDisk(svg, defs, p, cx, cy, r, "av", false);
+
+  ringFronts.forEach(f => svg.appendChild(f));
 
   return svg;
 }
@@ -1472,148 +1576,40 @@ function buildPlanetScene(p) {
   svg.setAttribute("width","100%");
   svg.style.display = "block";
   const ns = svg.namespaceURI;
-  const cx = 200, cy = 130;
+  const cx = 200, cy = 130, r = 44;
 
   // background stars
   for (let i=0;i<40;i++) {
     const h = hash("bg"+i);
-    const bx = h % 400, by = (h*7) % 260, r = 0.6 + (h % 3)*0.3;
+    const bx = h % 400, by = (h*7) % 260, sr = 0.6 + (h % 3)*0.3;
     const dot = document.createElementNS(ns,"circle");
-    dot.setAttribute("cx",bx); dot.setAttribute("cy",by); dot.setAttribute("r",r);
+    dot.setAttribute("cx",bx); dot.setAttribute("cy",by); dot.setAttribute("r",sr);
     dot.setAttribute("fill","#4a4480"); dot.setAttribute("opacity","0.5");
     svg.appendChild(dot);
   }
 
-  const usePhoto = !!(p.realPlanetId && planetPhotoCache[p.realPlanetId]);
   const defs = document.createElementNS(ns,"defs");
-  let fillRef;
-  if (usePhoto) {
-    const patId = "photo-"+p.id;
-    const pattern = document.createElementNS(ns,"pattern");
-    pattern.setAttribute("id", patId);
-    pattern.setAttribute("patternUnits","objectBoundingBox");
-    pattern.setAttribute("width","1"); pattern.setAttribute("height","1");
-    const image = document.createElementNS(ns,"image");
-    image.setAttributeNS("http://www.w3.org/1999/xlink","href", planetPhotoCache[p.realPlanetId]);
-    image.setAttribute("href", planetPhotoCache[p.realPlanetId]);
-    image.setAttribute("x","0"); image.setAttribute("y","0");
-    image.setAttribute("width","1"); image.setAttribute("height","1");
-    image.setAttribute("preserveAspectRatio","xMidYMid slice");
-    pattern.appendChild(image);
-    defs.appendChild(pattern);
-    fillRef = `url(#${patId})`;
-  } else {
-    const grad = document.createElementNS(ns,"radialGradient");
-    const gradId = "grad-"+p.id;
-    grad.setAttribute("id", gradId);
-    grad.setAttribute("cx","35%"); grad.setAttribute("cy","32%"); grad.setAttribute("r","75%");
-    grad.innerHTML = `<stop offset="0%" stop-color="#fff" stop-opacity="0.85"/><stop offset="35%" stop-color="${p.color}"/><stop offset="100%" stop-color="#241f4c"/>`;
-    defs.appendChild(grad);
-    fillRef = `url(#${gradId})`;
-  }
-
-  const shadeGrad = document.createElementNS(ns,"radialGradient");
-  const shadeId = "shade-"+p.id;
-  shadeGrad.setAttribute("id", shadeId);
-  shadeGrad.setAttribute("cx","72%"); shadeGrad.setAttribute("cy","75%"); shadeGrad.setAttribute("r","65%");
-  shadeGrad.innerHTML = `<stop offset="0%" stop-color="#000" stop-opacity="0.55"/><stop offset="70%" stop-color="#000" stop-opacity="0.08"/><stop offset="100%" stop-color="#000" stop-opacity="0"/>`;
-  defs.appendChild(shadeGrad);
   svg.appendChild(defs);
 
   const learnedCount = p.unlocked.length;
-
-  // outer ring milestones (or forced for Saturn-style planets)
+  const ringRotDeg = (hash("ringrot"+p.id) % 30) - 15;
+  let ringFronts = [];
   if (learnedCount >= 20) {
-    const r2 = document.createElementNS(ns,"ellipse");
-    r2.setAttribute("cx",cx); r2.setAttribute("cy",cy); r2.setAttribute("rx",92); r2.setAttribute("ry",22);
-    r2.setAttribute("fill","none"); r2.setAttribute("stroke",p.color); r2.setAttribute("stroke-opacity","0.35"); r2.setAttribute("stroke-width","1.5");
-    r2.setAttribute("class","ring-outer");
-    svg.appendChild(r2);
+    ringFronts = ringFronts.concat(appendRingPair(svg, cx, cy, 92, 22, ringRotDeg, p.color, 0.3, 1.6));
   }
   if (learnedCount >= 10 || p.forceRing) {
-    const r1 = document.createElementNS(ns,"ellipse");
-    r1.setAttribute("cx",cx); r1.setAttribute("cy",cy); r1.setAttribute("rx",76); r1.setAttribute("ry",17);
-    r1.setAttribute("fill","none"); r1.setAttribute("stroke",p.color); r1.setAttribute("stroke-opacity","0.45"); r1.setAttribute("stroke-width","1.5");
-    r1.setAttribute("class","ring-outer");
-    svg.appendChild(r1);
+    ringFronts = ringFronts.concat(appendRingPair(svg, cx, cy, 76, 17, ringRotDeg, p.color, 0.45, 1.8));
   }
 
-  // glow halo
+  // glow halo (ambient, pulses)
   const halo = document.createElementNS(ns,"circle");
   halo.setAttribute("cx",cx); halo.setAttribute("cy",cy); halo.setAttribute("r","62");
   halo.setAttribute("fill",p.color); halo.setAttribute("class","planet-halo");
   svg.appendChild(halo);
 
-  // planet body
-  const planet = document.createElementNS(ns,"circle");
-  planet.setAttribute("cx",cx); planet.setAttribute("cy",cy); planet.setAttribute("r","44");
-  planet.setAttribute("fill", fillRef);
-  svg.appendChild(planet);
+  paintPlanetDisk(svg, defs, p, cx, cy, r, "sc", true);
 
-  // rotating texture bands (clipped to planet) — skipped when using a real NASA photo
-  if (!usePhoto) {
-    const clipId = "clip-"+p.id;
-    const clip = document.createElementNS(ns,"clipPath");
-    clip.setAttribute("id", clipId);
-    const clipCircle = document.createElementNS(ns,"circle");
-    clipCircle.setAttribute("cx",cx); clipCircle.setAttribute("cy",cy); clipCircle.setAttribute("r","44");
-    clip.appendChild(clipCircle);
-    defs.appendChild(clip);
-
-    const bandGroup = document.createElementNS(ns,"g");
-    bandGroup.setAttribute("clip-path",`url(#${clipId})`);
-    bandGroup.setAttribute("class", p.style === "lava" ? "planet-halo" : "planet-band");
-    const style = p.style || "bands";
-
-    if (style === "bands") {
-      [0,1,2].forEach(i => {
-        const band = document.createElementNS(ns,"ellipse");
-        band.setAttribute("cx", cx + (i-1)*20); band.setAttribute("cy", cy - 10 + i*14);
-        band.setAttribute("rx","50"); band.setAttribute("ry","10");
-        band.setAttribute("fill","#fff"); band.setAttribute("opacity", 0.06 + i*0.03);
-        bandGroup.appendChild(band);
-      });
-    } else if (style === "rocky") {
-      for (let i=0;i<10;i++) {
-        const h1 = hash("rock"+p.id+i), h2 = hash("rockY"+p.id+i);
-        const rx = cx - 44 + (h1 % 88), ry = cy - 44 + (h2 % 88);
-        const crater = document.createElementNS(ns,"circle");
-        crater.setAttribute("cx",rx); crater.setAttribute("cy",ry); crater.setAttribute("r", 2 + (h1%4));
-        crater.setAttribute("fill","#000"); crater.setAttribute("opacity","0.15");
-        bandGroup.appendChild(crater);
-      }
-    } else if (style === "crystal") {
-      for (let i=0;i<7;i++) {
-        const angle = (i / 7) * Math.PI * 2;
-        const line = document.createElementNS(ns,"line");
-        line.setAttribute("x1",cx); line.setAttribute("y1",cy);
-        line.setAttribute("x2", cx + Math.cos(angle)*46); line.setAttribute("y2", cy + Math.sin(angle)*46);
-        line.setAttribute("stroke","#fff"); line.setAttribute("stroke-width","1"); line.setAttribute("opacity","0.25");
-        bandGroup.appendChild(line);
-      }
-    } else if (style === "lava") {
-      [0,1,2].forEach(i => {
-        const blob = document.createElementNS(ns,"ellipse");
-        blob.setAttribute("cx", cx + (i-1)*16); blob.setAttribute("cy", cy + (i-1)*10);
-        blob.setAttribute("rx","26"); blob.setAttribute("ry","14");
-        blob.setAttribute("fill","#fff2c2"); blob.setAttribute("opacity", 0.12 + i*0.05);
-        bandGroup.appendChild(blob);
-      });
-    }
-    svg.appendChild(bandGroup);
-  }
-
-  // shading overlay for sphere volume (dark side)
-  const shadeCircle = document.createElementNS(ns,"circle");
-  shadeCircle.setAttribute("cx",cx); shadeCircle.setAttribute("cy",cy); shadeCircle.setAttribute("r","44");
-  shadeCircle.setAttribute("fill",`url(#${shadeId})`);
-  svg.appendChild(shadeCircle);
-
-  // thin atmosphere rim
-  const rim = document.createElementNS(ns,"circle");
-  rim.setAttribute("cx",cx); rim.setAttribute("cy",cy); rim.setAttribute("r","44.5");
-  rim.setAttribute("fill","none"); rim.setAttribute("stroke", p.color); rim.setAttribute("stroke-opacity","0.5"); rim.setAttribute("stroke-width","1");
-  svg.appendChild(rim);
+  ringFronts.forEach(f => svg.appendChild(f));
 
   // orbiting moons (one per unlocked topic)
   if (learnedCount > 0) {
