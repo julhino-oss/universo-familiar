@@ -87,25 +87,8 @@
   .title { font-size: 26px; font-weight: 700; line-height: 1.15; }
   .subtitle { color: var(--muted); font-size: 14px; margin-top: 8px; }
 
-  /* ---- Home: profile planets ---- */
+  /* ---- Shared header + planet avatar ---- */
   .home-header { margin-bottom: 24px; }
-  .planet-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 14px;
-    margin-top: 20px;
-  }
-  .planet-card {
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: 20px;
-    padding: 18px 14px;
-    text-align: center;
-    cursor: pointer;
-    box-shadow: 0 6px 16px rgba(8,6,24,0.35);
-    transition: transform .15s ease, background .15s ease, box-shadow .15s ease;
-  }
-  .planet-card:hover { transform: translateY(-3px); background: var(--card-hi); box-shadow: 0 10px 22px rgba(8,6,24,0.45); }
   .planet-avatar {
     width: 56px; height: 56px;
     border-radius: 50%;
@@ -115,21 +98,6 @@
     box-shadow: 0 0 0 4px rgba(255,255,255,0.05), 0 6px 14px rgba(8,6,24,0.4);
   }
   .planet-avatar svg { width: 100%; height: 100%; }
-  .planet-name { font-weight: 600; font-size: 15px; }
-  .planet-meta { color: var(--muted); font-size: 12px; margin-top: 4px; }
-  .add-card {
-    border: 1.5px dashed var(--line);
-    background: transparent;
-    border-radius: 20px;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    color: var(--muted);
-    cursor: pointer;
-    min-height: 116px;
-    font-size: 13px;
-    gap: 6px;
-  }
-  .add-card:hover { border-color: var(--gold); color: var(--gold); }
-  .add-plus { font-size: 26px; font-family: 'Fraunces', serif; }
 
   /* ---- Profile view ---- */
   .top-row {
@@ -612,15 +580,15 @@ function ensurePlanetPhoto(planetId) {
 
 let profiles = loadProfiles();
 let currentProfileId = null;
-let currentView = 'home'; // 'solar' | 'home' | 'profile'
+let currentView = 'solar'; // 'solar' | 'profile'
 
 function rerenderCurrentView() {
   if (currentView === 'profile' && currentProfileId && profiles.some(pr => pr.id === currentProfileId)) {
     renderProfile();
-  } else if (currentView === 'solar' && solarActive) {
+  } else if (solarActive) {
     syncSolarPlanets();
   } else {
-    renderHome();
+    renderSolarSystem();
   }
 }
 
@@ -678,11 +646,11 @@ function startApp() {
   try {
     firebase.initializeApp(FIREBASE_CONFIG);
     db = firebase.firestore();
-  } catch(e) { cloudEnabled = false; renderHome(); return; }
+  } catch(e) { cloudEnabled = false; renderSolarSystem(); return; }
 
   showLoadingScreen('Preparando tu universo...');
   firebase.auth().signInAnonymously().catch(() => {
-    cloudEnabled = false; cloudBlocked = true; renderHome();
+    cloudEnabled = false; cloudBlocked = true; renderSolarSystem();
   });
   firebase.auth().onAuthStateChanged(user => {
     if (!user) return;
@@ -946,8 +914,7 @@ let solarBottomBarFor = null;
 let hasLandedThisSession = false;
 
 function goLanding() {
-  if (profiles.length > 0) renderSolarSystem();
-  else renderHome();
+  renderSolarSystem();
 }
 
 function teardownSolarIfActive() {
@@ -1202,6 +1169,48 @@ function solarFrame(ts) {
   solarRafId = requestAnimationFrame(solarFrame);
 }
 
+function showSolarMenu() {
+  const overlay = el(`
+    <div class="overlay">
+      <div class="sheet">
+        <button class="sheet-close">✕</button>
+        <h2 style="margin-bottom:14px;">Menú</h2>
+        <div class="cat-list"></div>
+      </div>
+    </div>
+  `);
+  overlay.querySelector('.sheet-close').onclick = () => overlay.remove();
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+
+  if (cloudEnabled && familyCode) {
+    overlay.querySelector('.sheet').appendChild(el(`
+      <div style="background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:14px;font-size:12.5px;color:var(--muted);">
+        Código familiar: <strong style="color:var(--gold);letter-spacing:.03em;">${familyCode}</strong>
+      </div>
+    `));
+  }
+
+  const list = overlay.querySelector('.cat-list');
+
+  const addItem = el(`<div class="cat-item"><span class="cat-item-name">＋ Agregar familiar</span></div>`);
+  addItem.onclick = () => { overlay.remove(); showAddProfileSheet(); };
+  list.appendChild(addItem);
+
+  if (profiles.length > 0) {
+    const progressItem = el(`<div class="cat-item"><span class="cat-item-name">📊 Ver progreso familiar</span></div>`);
+    progressItem.onclick = () => { overlay.remove(); showFamilyProgressSheet(); };
+    list.appendChild(progressItem);
+  }
+
+  if (cloudEnabled && familyCode) {
+    const leaveItem = el(`<div class="cat-item"><span class="cat-item-name">🔁 Cambiar código familiar</span></div>`);
+    leaveItem.onclick = () => { overlay.remove(); leaveFamily(); };
+    list.appendChild(leaveItem);
+  }
+
+  document.body.appendChild(overlay);
+}
+
 function renderSolarSystem() {
   teardownSolarIfActive();
   currentView = 'solar';
@@ -1254,17 +1263,37 @@ function renderSolarSystem() {
     solarPaused = !solarPaused;
     pauseBtn.textContent = solarPaused ? '▶ Seguir' : '⏸ Pausar';
   };
-  const skipBtn = el(`<button class="solar-btn">Ver lista clásica →</button>`);
-  skipBtn.onclick = () => { renderHome(); };
+  const menuBtn = el(`<button class="solar-btn">☰ Menú</button>`);
+  menuBtn.onclick = () => showSolarMenu();
   topbar.appendChild(pauseBtn);
-  topbar.appendChild(skipBtn);
+  topbar.appendChild(menuBtn);
   view.appendChild(topbar);
+
+  if (cloudBlocked || storageBlocked) {
+    const warn = el(`
+      <div style="position:absolute;top:66px;left:16px;right:16px;z-index:3;background:rgba(36,31,76,0.92);border:1px solid var(--coral);border-radius:12px;padding:10px 12px;font-size:11.5px;color:var(--muted);box-shadow:0 4px 14px rgba(0,0,0,0.35);">
+        ⚠️ ${cloudBlocked ? 'No se pudo conectar con la nube ahora mismo. Tu progreso se sigue guardando en este dispositivo.' : 'Este navegador no está guardando el progreso de forma permanente.'}
+      </div>
+    `);
+    view.appendChild(warn);
+  }
 
   const bottomBar = document.createElement('div');
   bottomBar.id = 'solarBottomBar';
   bottomBar.className = 'solar-bottombar';
   bottomBar.style.display = 'none';
   view.appendChild(bottomBar);
+
+  if (profiles.length === 0) {
+    const emptyPrompt = el(`
+      <div style="position:absolute;left:0;right:0;bottom:0;padding:26px 20px 30px;text-align:center;background:linear-gradient(180deg, transparent, rgba(10,8,26,0.88) 35%, #0e0b24 75%);z-index:3;">
+        <p style="color:var(--muted);font-size:13.5px;margin:0 0 14px;">Aún no hay familiares en este universo.</p>
+        <button class="cta" style="max-width:280px;margin:0 auto;">＋ Agregar el primer familiar</button>
+      </div>
+    `);
+    emptyPrompt.querySelector('.cta').onclick = () => showAddProfileSheet();
+    view.appendChild(emptyPrompt);
+  }
 
   view.addEventListener('click', (e) => {
     if (e.target === view || e.target === starCanvas || e.target === starEl) {
@@ -1301,83 +1330,6 @@ function renderSolarSystem() {
 
   solarActive = true;
   solarRafId = requestAnimationFrame(solarFrame);
-}
-
-function renderHome() {
-  teardownSolarIfActive();
-  currentView = 'home';
-  const app = document.getElementById('app');
-  app.innerHTML = '';
-  app.appendChild(el(`
-    <div class="home-header">
-      <div class="eyebrow">Aprendizaje en familia</div>
-      <h1 class="title">Universo Familiar</h1>
-      <p class="subtitle">Cada quien tiene su propio planeta. Cada cosa nueva que aprenden le suma una luna.</p>
-    </div>
-  `));
-
-  if (cloudEnabled && familyCode) {
-    const codeChip = el(`
-      <div style="display:flex;align-items:center;justify-content:space-between;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 14px;margin-bottom:16px;box-shadow:0 3px 10px rgba(8,6,24,0.25);">
-        <span style="font-size:12.5px;color:var(--muted);">Código familiar: <strong style="color:var(--gold);letter-spacing:.03em;">${familyCode}</strong></span>
-        <button id="leaveFamilyBtn" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;text-decoration:underline;">Cambiar</button>
-      </div>
-    `);
-    codeChip.querySelector('#leaveFamilyBtn').onclick = () => leaveFamily();
-    app.appendChild(codeChip);
-  }
-
-  if (cloudBlocked) {
-    app.appendChild(el(`
-      <div style="background:var(--card);border:1px solid var(--coral);border-radius:14px;padding:12px 14px;margin-bottom:16px;font-size:12.5px;color:var(--muted);">
-        ⚠️ No se pudo conectar con la nube ahora mismo. Tu progreso se sigue guardando en este dispositivo y se sincronizará cuando vuelva la conexión.
-      </div>
-    `));
-  }
-
-  if (storageBlocked) {
-    app.appendChild(el(`
-      <div style="background:var(--card);border:1px solid var(--coral);border-radius:14px;padding:12px 14px;margin-bottom:16px;font-size:12.5px;color:var(--muted);">
-        ⚠️ Este navegador no está guardando el progreso de forma permanente. Ábrela directamente desde su navegador (no dentro de otra app) para que tu progreso se guarde entre sesiones.
-      </div>
-    `));
-  }
-
-  const grid = el(`<div class="planet-grid"></div>`);
-  profiles.forEach(rawP => {
-    const p = ensureProfileDefaults(rawP);
-    if (p.realPlanetId) ensurePlanetPhoto(p.realPlanetId);
-    const learnedCount = p.unlocked.length;
-    const card = el(`
-      <div class="planet-card">
-        <div class="planet-avatar"></div>
-        <div class="planet-name">${p.name}</div>
-        <div class="planet-meta">${learnedCount} luna${learnedCount===1?'':'s'} · 🔥 ${p.streak}</div>
-      </div>
-    `);
-    card.querySelector('.planet-avatar').appendChild(buildPlanetAvatar(p));
-    card.onclick = () => { currentProfileId = p.id; renderProfile(); };
-    grid.appendChild(card);
-  });
-  const addCard = el(`
-    <div class="add-card">
-      <div class="add-plus">＋</div>
-      <div>Agregar familiar</div>
-    </div>
-  `);
-  addCard.onclick = () => showAddProfileSheet();
-  grid.appendChild(addCard);
-  app.appendChild(grid);
-
-  if (profiles.length > 0) {
-    const progressBtn = el(`<button class="cta" style="background:transparent;border:1px solid var(--line);color:var(--text);">📊 Ver progreso familiar</button>`);
-    progressBtn.onclick = () => showFamilyProgressSheet();
-    app.appendChild(progressBtn);
-
-    const solarBtn = el(`<button class="cta" style="background:transparent;border:1px solid var(--line);color:var(--text);margin-top:10px;">🪐 Ver sistema solar</button>`);
-    solarBtn.onclick = () => renderSolarSystem();
-    app.appendChild(solarBtn);
-  }
 }
 
 function showAddProfileSheet() {
@@ -1428,7 +1380,7 @@ function showAddProfileSheet() {
     profiles.push(newProfile);
     saveProfiles(profiles);
     overlay.remove();
-    renderHome();
+    renderSolarSystem();
   };
   document.body.appendChild(overlay);
 }
@@ -1456,11 +1408,11 @@ function renderProfile() {
 
   const top = el(`
     <div class="top-row">
-      <button class="back-btn">← Todos</button>
+      <button class="back-btn">← Sistema solar</button>
       <div class="streak-chip">🔥 ${p.streak} día${p.streak===1?'':'s'}</div>
     </div>
   `);
-  top.querySelector('.back-btn').onclick = () => renderHome();
+  top.querySelector('.back-btn').onclick = () => renderSolarSystem();
   app.appendChild(top);
 
   if (p.realPlanetId) ensurePlanetPhoto(p.realPlanetId);
