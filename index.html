@@ -209,6 +209,10 @@
   .detail-cat { color: var(--gold); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; font-weight: 600; }
   .detail-title { font-size: 20px; margin: 8px 0 14px; }
   .detail-body { font-size: 14.5px; line-height: 1.6; color: #ded9f5; }
+  .deepen { margin-top: 14px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; }
+  .deepen summary { cursor: pointer; font-weight: 600; font-size: 13px; color: var(--gold); list-style: revert; }
+  .deepen summary::marker { color: var(--gold); }
+  .deepen[open] summary { margin-bottom: 4px; }
 
   input.name-input {
     width: 100%;
@@ -334,11 +338,11 @@ window.addEventListener('error', function(e) {
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script>
 const TOPICS = [
-  {id:"cn1",cat:"Ciencia y Naturaleza",title:"Qué es la cadena alimenticia",body:"Es el orden en que unos seres vivos se alimentan de otros: las plantas producen su propio alimento con el sol, los herbívoros comen plantas, y los carnívoros comen a otros animales. Si un eslabón desaparece, todos los demás se ven afectados."},
-  {id:"cn2",cat:"Ciencia y Naturaleza",title:"Por qué truena y relampaguea",body:"Dentro de una tormenta, el aire se carga de electricidad y esa energía se libera de golpe como un rayo de luz: el relámpago. El trueno es el sonido que hace el aire al calentarse tan rápido con esa descarga; se ve primero porque la luz viaja más rápido que el sonido."},
-  {id:"cn3",cat:"Ciencia y Naturaleza",title:"Cómo se forma un arcoíris",body:"Cuando el sol brilla mientras todavía hay gotitas de lluvia en el aire, la luz entra en cada gota y se separa en todos sus colores, como si la gota fuera un pequeño prisma. Por eso los arcoíris aparecen justo después de llover, con el sol detrás de ti."},
-  {id:"cn4",cat:"Ciencia y Naturaleza",title:"Por qué las plantas necesitan el sol",body:"Las plantas usan la luz del sol como si fuera comida: la combinan con agua y aire para fabricar su propio alimento, en un proceso llamado fotosíntesis. Sin luz, no pueden producir la energía que necesitan para crecer."},
-  {id:"cn5",cat:"Ciencia y Naturaleza",title:"Qué es la erosión",body:"Es el desgaste lento que el agua, el viento y el hielo le hacen a las rocas y la tierra con el paso del tiempo. Así se formaron muchos cañones y valles: no de un día para otro, sino durante miles o millones de años."},
+  {id:"cn1",cat:"Ciencia y Naturaleza",title:"Qué es la cadena alimenticia",body:"Es el orden en que unos seres vivos se alimentan de otros: las plantas producen su propio alimento con el sol, los herbívoros comen plantas, y los carnívoros comen a otros animales. Si un eslabón desaparece, todos los demás se ven afectados.",deepen:["Los científicos llaman 'productores' a las plantas porque son las únicas que pueden crear alimento de la nada (con luz, agua y aire). Todo lo demás en la cadena —desde un conejo hasta un león— depende, directa o indirectamente, de ese primer eslabón. Por eso cuando se tala un bosque entero, no solo desaparecen árboles: se rompe la base que sostenía a cientos de animales distintos.","Además, la energía se va perdiendo en cada paso: un conejo aprovecha solo una parte de la energía de la planta que comió, y el zorro que se come al conejo aprovecha aún menos. Por eso siempre hay muchas más plantas que herbívoros, y muchos más herbívoros que depredadores — la pirámide se hace más angosta mientras más arriba subes."]},
+  {id:"cn2",cat:"Ciencia y Naturaleza",title:"Por qué truena y relampaguea",body:"Dentro de una tormenta, el aire se carga de electricidad y esa energía se libera de golpe como un rayo de luz: el relámpago. El trueno es el sonido que hace el aire al calentarse tan rápido con esa descarga; se ve primero porque la luz viaja más rápido que el sonido.",deepen:["Dentro de una nube de tormenta, el hielo y el agua chocan entre sí sin parar, arrastrados por corrientes de aire muy fuertes. Ese roce constante separa las cargas eléctricas: las positivas suben a la parte alta de la nube y las negativas se acumulan abajo, como si la nube fuera una pila gigante.","Cuando la diferencia de carga es suficientemente grande, salta una chispa gigantesca entre la nube y el suelo (o entre dos nubes): eso es el rayo. Puede alcanzar temperaturas de hasta 30,000°C, cinco veces más caliente que la superficie del sol, y ese calor extremo es justo lo que hace que el aire se expanda de golpe y produzca el estruendo del trueno."]},
+  {id:"cn3",cat:"Ciencia y Naturaleza",title:"Cómo se forma un arcoíris",body:"Cuando el sol brilla mientras todavía hay gotitas de lluvia en el aire, la luz entra en cada gota y se separa en todos sus colores, como si la gota fuera un pequeño prisma. Por eso los arcoíris aparecen justo después de llover, con el sol detrás de ti.",deepen:["Cuando la luz del sol entra a una gota de lluvia, no solo se separa en colores: también rebota dentro de la gota como en un espejo antes de salir de nuevo hacia tus ojos. Ese rebote es clave — sin él, la luz seguiría de largo y nunca verías el arcoíris.","Cada persona ve un arcoíris ligeramente distinto, formado por gotas diferentes, porque depende del ángulo exacto entre el sol, la lluvia y tus propios ojos. Por eso es imposible 'llegar' a un arcoíris o pararse debajo de él: se mueve contigo, porque en realidad es tu arcoíris personal, formado solo para el lugar exacto donde estás parado."]},
+  {id:"cn4",cat:"Ciencia y Naturaleza",title:"Por qué las plantas necesitan el sol",body:"Las plantas usan la luz del sol como si fuera comida: la combinan con agua y aire para fabricar su propio alimento, en un proceso llamado fotosíntesis. Sin luz, no pueden producir la energía que necesitan para crecer.",deepen:["Dentro de las hojas hay un pigmento verde llamado clorofila, que funciona como una diminuta fábrica solar: atrapa la energía de la luz y la usa para unir agua (que sube desde las raíces) con dióxido de carbono (que entra por el aire) y fabricar azúcar, el alimento de la planta. Como resultado de ese proceso, la planta libera oxígeno al aire — el mismo que tú respiras.","Esto significa que, en cierta forma, cada bocado de comida que existe en el planeta —incluso la carne que come un león— empezó como luz solar convertida en azúcar por una planta. Por eso la fotosíntesis se considera el proceso que sostiene casi toda la vida en la Tierra."]},
+  {id:"cn5",cat:"Ciencia y Naturaleza",title:"Qué es la erosión",body:"Es el desgaste lento que el agua, el viento y el hielo le hacen a las rocas y la tierra con el paso del tiempo. Así se formaron muchos cañones y valles: no de un día para otro, sino durante miles o millones de años.",deepen:["La erosión no actúa igual en todos lados: el agua de un río desgasta la roca poco a poco arrastrando piedritas que actúan como lija, mientras que el hielo se mete en las grietas de una roca y, al congelarse, se expande y la parte en pedazos. El viento, por su parte, lanza granos de arena a gran velocidad que van puliendo la piedra con el tiempo.","El Gran Cañón, en Estados Unidos, es un ejemplo extremo: el río Colorado tardó millones de años en excavar una grieta de casi 1.6 kilómetros de profundidad, capa por capa, dejando a la vista rocas que se formaron mucho antes de que existieran los dinosaurios."]},
 
   {id:"te1",cat:"Tecnología e IA",title:"Qué es internet",body:"Es una gigantesca red que conecta computadoras y celulares de todo el mundo entre sí, para que puedan enviarse información. Gracias a eso puedes video-llamar a alguien en otro país o ver una página web que está guardada en una computadora lejana."},
   {id:"te2",cat:"Tecnología e IA",title:"Por qué es importante una buena contraseña",body:"Una contraseña es como la llave de una casa digital: si es fácil de adivinar (como '1234'), cualquiera puede entrar a tus cuentas. Mientras más larga y menos obvia sea, más difícil es que alguien más la descubra."},
@@ -438,6 +442,15 @@ const QUIZZES = {
   bi3: { q:"¿Qué enseña la 'Regla de Oro' de Mateo 7:12?", options:["Tratar a los demás como te gustaría que te traten a ti","Dar siempre más de lo que recibes","Hacer solo lo que otros te digan"], correct:0 },
   bi4: { q:"Según 1 Corintios 13:4, ¿cómo es el amor descrito?", options:["Paciente y bondadoso","Exigente y celoso","Silencioso y distante"], correct:0 },
   bi5: { q:"¿Qué idea transmite Eclesiastés 3:1?", options:["Que cada cosa en la vida tiene su momento y su hora","Que hay que apurarse en todo","Que el tiempo no importa"], correct:0 },
+};
+
+/* Pregunta extra, mas dificil, solo para quien quiera el reto. Acertarla da una luna extra; fallarla no quita nada. */
+const QUIZZES_HARD = {
+  cn1: { q:"¿Por qué siempre hay muchas más plantas que depredadores en un ecosistema?", options:["Porque se pierde energía en cada paso de la cadena","Porque las plantas se reproducen más rápido nada más","Porque los depredadores comen muy poco"], correct:0 },
+  cn2: { q:"¿Qué tan caliente puede llegar a estar un rayo comparado con el Sol?", options:["Hasta cinco veces más caliente que la superficie del Sol","Un poco más frío que el Sol","Casi la misma temperatura que el Sol"], correct:0 },
+  cn3: { q:"¿Por qué nunca puedes 'llegar' hasta un arcoíris?", options:["Porque se forma según el ángulo exacto entre el sol, la lluvia y tus ojos, y cambia si te mueves","Porque los arcoíris se alejan volando","Porque solo existen en el cielo, nunca cerca del suelo"], correct:0 },
+  cn4: { q:"Según la fotosíntesis, ¿qué libera la planta al aire mientras fabrica su alimento?", options:["Oxígeno","Dióxido de carbono","Agua pura"], correct:0 },
+  cn5: { q:"¿Cómo logra el hielo romper una roca?", options:["Se mete en las grietas y, al congelarse, se expande y la parte","La derrite con el frío extremo","La hace más blanda con el tiempo"], correct:0 },
 };
 const COLORS = ["#f4b740","#ff6f5b","#7ad3c9","#c48cff","#6fa8ff","#ff8fb3"];
 const STYLES = [
@@ -1168,21 +1181,26 @@ function renderSolarBottomBar() {
   if (solarBottomBarFor === solarSelectedId) return;
   const entry = solarPlanetsById[solarSelectedId];
   const p = entry.p;
-  const learnedCount = (p.unlocked||[]).length;
+  const bonusIds = p.bonusMoons || [];
+  const totalMoonCount = (p.unlocked||[]).length + bonusIds.length;
   bar.innerHTML = '';
   bar.appendChild(el(`
     <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:8px;">
       <h2 style="font-size:19px;">${p.name}</h2>
-      <span style="color:var(--muted);font-size:13px;">🌙 ${learnedCount}</span>
+      <span style="color:var(--muted);font-size:13px;">🌙 ${totalMoonCount}</span>
     </div>
   `));
   const learned = (p.unlocked||[]).map(id => TOPICS.find(t=>t.id===id)).filter(Boolean);
+  const bonusTopics = bonusIds.map(id => TOPICS.find(t=>t.id===id)).filter(Boolean);
   const chipsWrap = el(`<div style="display:flex;gap:8px;overflow-x:auto;padding:4px 2px 6px;justify-content:${learned.length?'flex-start':'center'};"></div>`);
   if (learned.length === 0) {
     chipsWrap.appendChild(el(`<div style="color:var(--muted);font-size:12.5px;">Aún sin lunas</div>`));
   } else {
     learned.forEach(t => {
       chipsWrap.appendChild(el(`<div style="flex:0 0 auto;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:6px 12px;font-size:11.5px;white-space:nowrap;box-shadow:0 3px 8px rgba(0,0,0,0.3);">${t.title}</div>`));
+    });
+    bonusTopics.forEach(t => {
+      chipsWrap.appendChild(el(`<div style="flex:0 0 auto;background:var(--card);border:1px solid var(--gold);border-radius:20px;padding:6px 12px;font-size:11.5px;white-space:nowrap;box-shadow:0 3px 8px rgba(0,0,0,0.3);color:var(--gold);">⭐ ${t.title}</div>`));
     });
   }
   bar.appendChild(chipsWrap);
@@ -1204,14 +1222,16 @@ function renderSolarMoons() {
   }
   const entry = solarPlanetsById[solarSelectedId];
   const p = entry.p;
-  const learned = (p.unlocked || []).map(id => TOPICS.find(t=>t.id===id)).filter(Boolean);
+  const learned = (p.unlocked || []).map(id => ({ topic: TOPICS.find(t=>t.id===id), bonus: false })).filter(m=>m.topic);
+  const bonusMoons = (p.bonusMoons || []).map(id => ({ topic: TOPICS.find(t=>t.id===id), bonus: true })).filter(m=>m.topic);
+  const allMoons = learned.concat(bonusMoons);
   const pos = planetPositionAt(entry.orb, solarClock);
   const screenX = solarCam.tx + pos.x*solarCam.s;
   const screenY = solarCam.ty + pos.y*solarCam.s;
 
-  if (solarMoonsFor !== solarSelectedId || solarMoonEls.length !== learned.length) {
+  if (solarMoonsFor !== solarSelectedId || solarMoonEls.length !== allMoons.length) {
     solarMoonEls.forEach(m=>{ m.wrap.remove(); m.label.remove(); });
-    solarMoonEls = learned.map(() => {
+    solarMoonEls = allMoons.map(() => {
       const wrap = document.createElement('div');
       wrap.style.cssText = 'position:absolute;width:10px;height:10px;border-radius:50%;pointer-events:none;';
       const label = document.createElement('div');
@@ -1224,16 +1244,18 @@ function renderSolarMoons() {
   }
 
   const radius = 78;
-  learned.forEach((topic, i) => {
-    const angle = (i/Math.max(learned.length,1)) * Math.PI*2 + solarClock*(prefersReducedMotion?0:0.4);
+  allMoons.forEach((moonInfo, i) => {
+    const angle = (i/Math.max(allMoons.length,1)) * Math.PI*2 + solarClock*(prefersReducedMotion?0:0.4);
     const mx = screenX + Math.cos(angle)*radius;
     const my = screenY + Math.sin(angle)*radius*0.6;
     const m = solarMoonEls[i];
+    const moonColor = moonInfo.bonus ? '#ffe27a' : p.color;
     m.wrap.style.left = (mx-5)+'px'; m.wrap.style.top = (my-5)+'px';
-    m.wrap.style.background = p.color;
-    m.wrap.style.boxShadow = `0 0 8px ${p.color}`;
+    m.wrap.style.background = moonColor;
+    m.wrap.style.boxShadow = `0 0 8px ${moonColor}`;
     m.label.style.left = mx+'px'; m.label.style.top = (my+8)+'px';
-    m.label.textContent = topic.title;
+    m.label.style.color = moonInfo.bonus ? 'var(--gold)' : '';
+    m.label.textContent = (moonInfo.bonus ? '⭐ ' : '') + moonInfo.topic.title;
   });
 }
 
@@ -1482,7 +1504,7 @@ function showAddProfileSheet() {
   overlay.querySelector('#createBtn').onclick = () => {
     const name = overlay.querySelector('.name-input').value.trim();
     if (!name) return;
-    const newProfile = { id: 'p'+Date.now(), name, color: chosenColor, style: 'bands', forceRing: false, realPlanetId: null, unlocked: [], streak: 0, lastActive: null, seenBadges: [], activityLog: {} };
+    const newProfile = { id: 'p'+Date.now(), name, color: chosenColor, style: 'bands', forceRing: false, realPlanetId: null, unlocked: [], bonusMoons: [], streak: 0, lastActive: null, seenBadges: [], activityLog: {} };
     profiles.push(newProfile);
     saveProfiles(profiles);
     overlay.remove();
@@ -1497,6 +1519,7 @@ function ensureProfileDefaults(p) {
   if (p.forceRing === undefined) p.forceRing = false;
   if (!p.activityLog) p.activityLog = {};
   if (p.realPlanetId === undefined) p.realPlanetId = null;
+  if (!p.bonusMoons) p.bonusMoons = [];
   return p;
 }
 
@@ -1619,25 +1642,29 @@ function buildPlanetScene(p) {
 
   ringFronts.forEach(f => svg.appendChild(f));
 
-  // orbiting moons (one per unlocked topic)
-  if (learnedCount > 0) {
+  // orbiting moons (one per unlocked topic, plus extra gold ones for hard-quiz bonuses)
+  const bonusMoons = p.bonusMoons || [];
+  const allMoons = [...p.unlocked.map(id => ({ id, bonus: false })), ...bonusMoons.map(id => ({ id, bonus: true }))];
+  if (allMoons.length > 0) {
+    const totalMoonCount = allMoons.length;
     const orbitGroup = document.createElementNS(ns,"g");
     orbitGroup.setAttribute("class","orbit-group");
-    p.unlocked.forEach((id, i) => {
+    allMoons.forEach((m, i) => {
       const shell = Math.floor(i / 8);
       const inShellIndex = i % 8;
-      const inShellCount = Math.min(8, learnedCount - shell*8);
+      const inShellCount = Math.min(8, totalMoonCount - shell*8);
       const radius = 70 + shell*20;
       const angle = (inShellIndex / inShellCount) * Math.PI * 2 + shell*0.4;
       const mx = cx + Math.cos(angle) * radius;
       const my = cy + Math.sin(angle) * radius * 0.55;
+      const moonColor = m.bonus ? '#ffe27a' : p.color;
       const moon = document.createElementNS(ns,"circle");
-      moon.setAttribute("cx",mx); moon.setAttribute("cy",my); moon.setAttribute("r","4");
-      moon.setAttribute("fill", p.color);
+      moon.setAttribute("cx",mx); moon.setAttribute("cy",my); moon.setAttribute("r", m.bonus ? "5" : "4");
+      moon.setAttribute("fill", moonColor);
       orbitGroup.appendChild(moon);
       const moonGlow = document.createElementNS(ns,"circle");
-      moonGlow.setAttribute("cx",mx); moonGlow.setAttribute("cy",my); moonGlow.setAttribute("r","7");
-      moonGlow.setAttribute("fill", p.color); moonGlow.setAttribute("opacity","0.25");
+      moonGlow.setAttribute("cx",mx); moonGlow.setAttribute("cy",my); moonGlow.setAttribute("r", m.bonus ? "9" : "7");
+      moonGlow.setAttribute("fill", moonColor); moonGlow.setAttribute("opacity", m.bonus ? "0.4" : "0.25");
       orbitGroup.insertBefore(moonGlow, moon);
     });
     svg.appendChild(orbitGroup);
@@ -1896,6 +1923,12 @@ function showDetailSheet(p, t) {
   ` : '';
 
   const detailMeta = catMeta(t.cat);
+  const deepenHtml = t.deepen && t.deepen.length ? `
+    <details class="deepen">
+      <summary>🔎 Profundizar</summary>
+      ${t.deepen.map(para => `<p class="detail-body" style="margin-top:10px;">${para}</p>`).join('')}
+    </details>
+  ` : '';
   const overlay = el(`
     <div class="overlay">
       <div class="sheet detail-card">
@@ -1903,6 +1936,7 @@ function showDetailSheet(p, t) {
         <div class="detail-cat" style="color:${detailMeta.color};">${detailMeta.icon} ${t.cat}</div>
         <h2 class="detail-title">${t.title}</h2>
         <p class="detail-body">${t.body}</p>
+        ${deepenHtml}
         ${notesHtml}
         <div class="eyebrow" style="margin-top:16px;">Deja tu nota (opcional)</div>
         <textarea id="noteInput" placeholder="Algo que te haya sorprendido..." maxlength="140" style="width:100%;margin-top:6px;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--text);font-family:'Sora',sans-serif;font-size:13px;resize:none;" rows="2"></textarea>
@@ -1922,7 +1956,7 @@ function showDetailSheet(p, t) {
 
 function showQuizSheet(p, t, noteText) {
   const quiz = QUIZZES[t.id];
-  if (!quiz) { finishLearning(p, t, noteText, null); return; }
+  if (!quiz) { proceedAfterQuiz(p, t, noteText, null); return; }
 
   const overlay = el(`
     <div class="overlay">
@@ -1934,8 +1968,8 @@ function showQuizSheet(p, t, noteText) {
       </div>
     </div>
   `);
-  overlay.querySelector('.sheet-close').onclick = () => { overlay.remove(); finishLearning(p, t, noteText, null); };
-  overlay.onclick = (e) => { if (e.target === overlay) { overlay.remove(); finishLearning(p, t, noteText, null); } };
+  overlay.querySelector('.sheet-close').onclick = () => { overlay.remove(); proceedAfterQuiz(p, t, noteText, null); };
+  overlay.onclick = (e) => { if (e.target === overlay) { overlay.remove(); proceedAfterQuiz(p, t, noteText, null); } };
 
   const optionsWrap = overlay.querySelector('#quizOptions');
   quiz.options.forEach((opt, i) => {
@@ -1959,7 +1993,7 @@ function showQuizSheet(p, t, noteText) {
       overlay.querySelector('.sheet').appendChild(feedback);
       overlay.querySelector('#continueBtn').onclick = () => {
         overlay.remove();
-        finishLearning(p, t, noteText, correct);
+        proceedAfterQuiz(p, t, noteText, correct);
       };
     };
     optionsWrap.appendChild(btn);
@@ -1967,8 +2001,63 @@ function showQuizSheet(p, t, noteText) {
   document.body.appendChild(overlay);
 }
 
-function finishLearning(p, t, noteText, quizCorrect) {
+function proceedAfterQuiz(p, t, noteText, quizCorrect) {
+  if (QUIZZES_HARD[t.id]) showHardQuizSheet(p, t, noteText, quizCorrect);
+  else finishLearning(p, t, noteText, quizCorrect, null);
+}
+
+function showHardQuizSheet(p, t, noteText, quizCorrect) {
+  const hard = QUIZZES_HARD[t.id];
+  const overlay = el(`
+    <div class="overlay">
+      <div class="sheet detail-card">
+        <button class="sheet-close">✕</button>
+        <div class="eyebrow" style="color:var(--gold);">🧠 Reto extra (opcional)</div>
+        <h2 style="font-size:18px;margin:8px 0 6px;">${hard.q}</h2>
+        <p class="subtitle" style="margin-bottom:14px;">Si fallas no pasa nada — ya aprendiste el tema igual.</p>
+        <div id="hardQuizOptions"></div>
+      </div>
+    </div>
+  `);
+  overlay.querySelector('.sheet-close').onclick = () => { overlay.remove(); finishLearning(p, t, noteText, quizCorrect, null); };
+  overlay.onclick = (e) => { if (e.target === overlay) { overlay.remove(); finishLearning(p, t, noteText, quizCorrect, null); } };
+
+  const optionsWrap = overlay.querySelector('#hardQuizOptions');
+  hard.options.forEach((opt, i) => {
+    const btn = el(`<div class="cat-item" style="cursor:pointer;"><span class="cat-item-name">${opt}</span></div>`);
+    btn.onclick = () => {
+      const bonusCorrect = i === hard.correct;
+      optionsWrap.querySelectorAll('.cat-item').forEach((it, j) => {
+        it.style.cursor = 'default';
+        it.onclick = null;
+        if (j === hard.correct) it.style.borderColor = '#4caf50';
+        if (j === i && !bonusCorrect) it.style.borderColor = 'var(--coral)';
+      });
+      const feedback = el(`
+        <div style="margin-top:16px;text-align:center;">
+          <div style="font-size:14px;color:${bonusCorrect ? '#4caf50' : 'var(--muted)'};font-weight:600;margin-bottom:12px;">
+            ${bonusCorrect ? '¡Increíble! Ganaste una luna extra 🌙✨' : 'Casi — pero no pierdes nada, sigues sumando tus lunas normales.'}
+          </div>
+          <button class="cta" id="continueBtn">Continuar</button>
+        </div>
+      `);
+      overlay.querySelector('.sheet').appendChild(feedback);
+      overlay.querySelector('#continueBtn').onclick = () => {
+        overlay.remove();
+        finishLearning(p, t, noteText, quizCorrect, bonusCorrect);
+      };
+    };
+    optionsWrap.appendChild(btn);
+  });
+  document.body.appendChild(overlay);
+}
+
+function finishLearning(p, t, noteText, quizCorrect, bonusCorrect) {
   if (!p.unlocked.includes(t.id)) p.unlocked.push(t.id);
+  if (bonusCorrect === true) {
+    if (!p.bonusMoons) p.bonusMoons = [];
+    if (!p.bonusMoons.includes(t.id)) p.bonusMoons.push(t.id);
+  }
   const today = todayKey();
   if (p.lastActive !== today) {
     p.streak = (p.lastActive === yesterdayKey()) ? p.streak + 1 : 1;
@@ -1985,22 +2074,24 @@ function finishLearning(p, t, noteText, quizCorrect) {
   p.seenBadges = earnedNow.map(b => b.id);
   saveProfiles(profiles);
   renderProfile();
-  showLearnedConfirmation(newBadges, quizCorrect);
+  showLearnedConfirmation(newBadges, quizCorrect, bonusCorrect);
 }
 
-function showLearnedConfirmation(newBadges, quizCorrect) {
+function showLearnedConfirmation(newBadges, quizCorrect, bonusCorrect) {
   const badgeHtml = newBadges.length
     ? `<div style="font-size:34px;margin-bottom:6px;">${newBadges.map(b=>b.emoji).join(' ')}</div>
        <div class="eyebrow" style="color:var(--gold);">¡Nueva insignia!</div>
        <div style="font-weight:600;font-size:15px;margin-bottom:14px;">${newBadges.map(b=>b.title).join(', ')}</div>`
     : `<div style="font-size:34px;margin-bottom:10px;">✨</div>`;
   const quizNote = quizCorrect === true ? `<div style="font-size:12.5px;color:#4caf50;margin-bottom:10px;">Acertaste la pregunta de repaso 🌟</div>` : '';
+  const bonusNote = bonusCorrect === true ? `<div style="font-size:12.5px;color:var(--gold);margin-bottom:10px;">🌙✨ Ganaste una luna extra por el reto difícil</div>` : '';
   const overlay = el(`
     <div class="overlay">
       <div class="sheet detail-card" style="text-align:center;">
         <button class="sheet-close">✕</button>
         ${badgeHtml}
         ${quizNote}
+        ${bonusNote}
         <h2 style="margin:6px 0 10px;font-size:19px;">¡Bien hecho!</h2>
         <p class="subtitle" style="font-size:14px;">${randomPhrase()}</p>
         <button class="cta">Seguir aprendiendo</button>
