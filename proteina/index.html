@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Proteína</title>
+  <meta name="description" content="Seguimiento diario de proteína y calorías">
+  <meta name="theme-color" content="#0e0f10">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Proteína">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="stylesheet" href="styles.css">
+  <script>
+    // Aplica el tema guardado antes de pintar para evitar parpadeo
+    try {
+      var s = JSON.parse(localStorage.getItem('proteina.v1') || '{}');
+      if (s.settings && s.settings.theme === 'light') document.documentElement.dataset.theme = 'light';
+    } catch (e) {}
+  </script>
+</head>
+<body>
+  <main id="app">
+
+    <!-- ============ HOY ============ -->
+    <section id="view-hoy" class="view active" aria-label="Hoy">
+      <header class="day-nav">
+        <button class="icon-btn" id="prev-day" aria-label="Día anterior">‹</button>
+        <div class="day-title">
+          <h1 id="day-label">Hoy</h1>
+          <p id="day-type" class="muted"></p>
+        </div>
+        <button class="icon-btn" id="next-day" aria-label="Día siguiente">›</button>
+      </header>
+
+      <label class="switch-row card" id="friday-row">
+        <span>
+          <strong>Modo Viernes</strong>
+          <small class="muted" id="friday-hint">Día de antojos: sube la meta de calorías</small>
+        </span>
+        <input type="checkbox" id="friday-toggle" class="switch">
+      </label>
+
+      <div class="card meter" id="meter-protein">
+        <div class="meter-head">
+          <span class="meter-label">Proteína</span>
+          <span class="meter-value"><strong id="p-total">0</strong> <span class="muted">/ <span id="p-goal">150</span> g</span></span>
+        </div>
+        <div class="bar"><div class="bar-range" id="p-range-bar"></div><div class="bar-fill" id="p-bar"></div><div class="bar-target" id="p-target"></div></div>
+        <p class="meter-sub muted" id="p-sub"></p>
+      </div>
+
+      <div class="card meter" id="meter-kcal">
+        <div class="meter-head">
+          <span class="meter-label">Calorías</span>
+          <span class="meter-value"><strong id="k-total">0</strong> <span class="muted">/ <span id="k-goal">2400</span> kcal</span></span>
+        </div>
+        <div class="bar"><div class="bar-range" id="k-range-bar"></div><div class="bar-fill" id="k-bar"></div></div>
+        <p class="meter-sub muted" id="k-sub"></p>
+      </div>
+
+      <div class="card suggest" id="suggest"></div>
+
+      <div id="meals"></div>
+    </section>
+
+    <!-- ============ HISTORIAL ============ -->
+    <section id="view-historial" class="view" aria-label="Historial">
+      <header class="view-head"><h1>Últimos 7 días</h1></header>
+      <div class="stats">
+        <div class="card stat"><span class="muted">Promedio proteína</span><strong id="avg-p">–</strong></div>
+        <div class="card stat"><span class="muted">Promedio calorías</span><strong id="avg-k">–</strong></div>
+      </div>
+      <p class="muted small" id="avg-note"></p>
+      <div class="card chart-card">
+        <h2>Proteína por día</h2>
+        <div id="hist-chart"></div>
+      </div>
+      <ul class="list" id="hist-list"></ul>
+    </section>
+
+    <!-- ============ CUERPO ============ -->
+    <section id="view-cuerpo" class="view" aria-label="Peso y cintura">
+      <header class="view-head"><h1>Peso y cintura</h1></header>
+      <form class="card form" id="body-form" novalidate>
+        <p class="muted small" id="body-reminder"></p>
+        <label>Fecha<input type="date" id="b-date" required></label>
+        <div class="row2">
+          <label>Peso (kg)<input type="text" inputmode="decimal" id="b-weight" placeholder="86,15"></label>
+          <label>Cintura (cm)<input type="text" inputmode="decimal" id="b-waist" placeholder="90"></label>
+        </div>
+        <p class="error" id="body-error" role="alert"></p>
+        <button class="btn primary" type="submit">Guardar medición</button>
+      </form>
+      <div class="card chart-card">
+        <h2>Peso <span class="muted small" id="w-delta"></span></h2>
+        <div id="weight-chart"></div>
+      </div>
+      <div class="card chart-card">
+        <h2>Cintura <span class="muted small" id="c-delta"></span></h2>
+        <div id="waist-chart"></div>
+      </div>
+      <ul class="list" id="body-list"></ul>
+    </section>
+
+    <!-- ============ AJUSTES ============ -->
+    <section id="view-ajustes" class="view" aria-label="Ajustes">
+      <header class="view-head"><h1>Ajustes</h1></header>
+      <form class="card form" id="settings-form" novalidate>
+        <h2>Proteína</h2>
+        <label>Meta diaria (g)<input type="number" inputmode="decimal" id="s-protein" min="1"></label>
+        <div class="row2">
+          <label>Rango mínimo (g)<input type="number" inputmode="decimal" id="s-pmin" min="0"></label>
+          <label>Rango máximo (g)<input type="number" inputmode="decimal" id="s-pmax" min="0"></label>
+        </div>
+        <h2>Calorías</h2>
+        <label>Meta diaria (kcal)<input type="number" inputmode="numeric" id="s-kcal" min="1"></label>
+        <label>Meta en Modo Viernes (kcal)<input type="number" inputmode="numeric" id="s-fkcal" min="1"></label>
+        <p class="error" id="settings-error" role="alert"></p>
+        <button class="btn primary" type="submit">Guardar metas</button>
+      </form>
+
+      <div class="card">
+        <label class="switch-row">
+          <span><strong>Tema claro</strong><small class="muted">Por defecto es oscuro</small></span>
+          <input type="checkbox" id="theme-toggle" class="switch">
+        </label>
+      </div>
+
+      <div class="card form">
+        <h2>Tus datos</h2>
+        <p class="muted small">Todo se guarda solo en este navegador. Exporta una copia de vez en cuando por si cambias de teléfono.</p>
+        <button class="btn" id="export-btn" type="button">Exportar copia (JSON)</button>
+        <label class="btn file-btn">Importar copia<input type="file" id="import-file" accept="application/json,.json" hidden></label>
+        <button class="btn" id="reset-favs" type="button">Restaurar comidas frecuentes</button>
+        <button class="btn danger" id="wipe-btn" type="button">Borrar todos los datos</button>
+      </div>
+      <p class="muted small center">Los valores marcados con ≈ son estimaciones. Verifica siempre con tus etiquetas.</p>
+    </section>
+  </main>
+
+  <!-- ============ BARRA INFERIOR ============ -->
+  <nav class="tabbar" aria-label="Secciones">
+    <button class="tab active" data-view="hoy"><span class="tab-ico">◉</span>Hoy</button>
+    <button class="tab" data-view="historial"><span class="tab-ico">▥</span>Historial</button>
+    <button class="tab add-tab" id="tab-add" aria-label="Añadir comida"><span>+</span></button>
+    <button class="tab" data-view="cuerpo"><span class="tab-ico">⚖</span>Cuerpo</button>
+    <button class="tab" data-view="ajustes"><span class="tab-ico">⚙</span>Ajustes</button>
+  </nav>
+
+  <!-- ============ HOJA: AÑADIR COMIDA ============ -->
+  <div class="sheet-backdrop" id="add-sheet" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="add-title">
+      <div class="sheet-head">
+        <h2 id="add-title">Añadir comida</h2>
+        <button class="icon-btn" data-close aria-label="Cerrar">✕</button>
+      </div>
+
+      <label class="field-label">¿En qué comida?</label>
+      <div class="seg" id="meal-seg"></div>
+
+      <div id="add-new-part">
+        <h3>Registro rápido</h3>
+        <form id="quick-form" class="quick" novalidate>
+          <input type="text" id="quick-input" autocomplete="off" autocapitalize="sentences"
+                 placeholder="Sándwich de pollo y pavo | 50-60 | 550-650">
+          <button class="btn primary" type="submit">Añadir</button>
+        </form>
+        <p class="muted small">Formato: <code>nombre | proteína mín-máx | kcal mín-máx</code>. Si es exacto, pon un solo número.</p>
+        <p class="error" id="quick-error" role="alert"></p>
+
+        <h3>Frecuentes</h3>
+        <div id="fav-list" class="fav-list"></div>
+        <button class="btn ghost" id="new-fav" type="button">+ Nueva comida frecuente</button>
+
+        <h3>Manual</h3>
+      </div>
+
+      <form id="item-form" class="form" novalidate>
+        <label>Nombre<input type="text" id="f-name" autocapitalize="sentences" placeholder="Ej. Huevos revueltos"></label>
+        <label class="field-label">Proteína (g)</label>
+        <div class="row2">
+          <input type="text" inputmode="decimal" id="f-pmin" placeholder="mín" aria-label="Proteína mínima">
+          <input type="text" inputmode="decimal" id="f-pmax" placeholder="máx (opcional)" aria-label="Proteína máxima">
+        </div>
+        <label class="field-label">Calorías (kcal)</label>
+        <div class="row2">
+          <input type="text" inputmode="decimal" id="f-kmin" placeholder="mín" aria-label="Calorías mínimas">
+          <input type="text" inputmode="decimal" id="f-kmax" placeholder="máx (opcional)" aria-label="Calorías máximas">
+        </div>
+        <label class="check-row"><input type="checkbox" id="f-exact"> Valores exactos de etiqueta verificada</label>
+        <label class="check-row" id="craving-row"><input type="checkbox" id="f-craving"> 🍦 Es mi antojo del viernes</label>
+        <p class="error" id="item-error" role="alert"></p>
+        <button class="btn primary" type="submit" id="item-submit">Guardar</button>
+        <button class="btn danger" type="button" id="item-delete" hidden>Eliminar</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============ HOJA: USAR / EDITAR FRECUENTE ============ -->
+  <div class="sheet-backdrop" id="fav-sheet" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="fav-title">
+      <div class="sheet-head">
+        <h2 id="fav-title">Comida frecuente</h2>
+        <button class="icon-btn" data-close aria-label="Cerrar">✕</button>
+      </div>
+
+      <div id="fav-use">
+        <p class="fav-info" id="fav-info"></p>
+        <label class="field-label" id="qty-label">Cantidad</label>
+        <div class="stepper">
+          <button type="button" class="icon-btn" id="qty-minus" aria-label="Menos">−</button>
+          <input type="text" inputmode="decimal" id="qty-input" aria-labelledby="qty-label">
+          <button type="button" class="icon-btn" id="qty-plus" aria-label="Más">+</button>
+        </div>
+        <p class="preview" id="qty-preview"></p>
+        <label class="check-row" id="fav-craving-row"><input type="checkbox" id="fav-craving"> 🍦 Es mi antojo del viernes</label>
+        <p class="error" id="qty-error" role="alert"></p>
+        <button class="btn primary" id="fav-add" type="button">Añadir</button>
+        <button class="btn ghost" id="fav-edit-open" type="button">Editar esta comida</button>
+      </div>
+
+      <form id="fav-form" class="form" novalidate hidden>
+        <label>Nombre<input type="text" id="fe-name"></label>
+        <div class="row2">
+          <label>Unidad<input type="text" id="fe-unit" placeholder="porción, envase, g…"></label>
+          <label>Valores por<input type="text" inputmode="decimal" id="fe-per" placeholder="1 o 100"></label>
+        </div>
+        <label class="field-label">Proteína (g)</label>
+        <div class="row2">
+          <input type="text" inputmode="decimal" id="fe-pmin" placeholder="mín" aria-label="Proteína mínima">
+          <input type="text" inputmode="decimal" id="fe-pmax" placeholder="máx (opcional)" aria-label="Proteína máxima">
+        </div>
+        <label class="field-label">Calorías (kcal)</label>
+        <div class="row2">
+          <input type="text" inputmode="decimal" id="fe-kmin" placeholder="mín" aria-label="Calorías mínimas">
+          <input type="text" inputmode="decimal" id="fe-kmax" placeholder="máx (opcional)" aria-label="Calorías máximas">
+        </div>
+        <label>Detalle (opcional)<input type="text" id="fe-info" placeholder="grasa, carbohidratos, notas…"></label>
+        <label class="check-row"><input type="checkbox" id="fe-verified"> Etiqueta verificada (valores exactos)</label>
+        <p class="error" id="fav-error" role="alert"></p>
+        <button class="btn primary" type="submit">Guardar comida frecuente</button>
+        <button class="btn danger" type="button" id="fav-delete">Eliminar de frecuentes</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
